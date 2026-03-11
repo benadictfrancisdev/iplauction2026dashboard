@@ -14,7 +14,190 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      auction_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          player_id: string | null
+          player_name: string
+          sold_price: number | null
+          team_id: string | null
+          team_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          player_name: string
+          sold_price?: number | null
+          team_id?: string | null
+          team_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          player_name?: string
+          sold_price?: number | null
+          team_id?: string | null
+          team_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auction_log_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "auction_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auction_log_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auction_players: {
+        Row: {
+          age: number | null
+          base_price: number
+          batting_style: string | null
+          bowling_style: string | null
+          country: string | null
+          created_at: string
+          id: string
+          ipl_caps: number | null
+          is_capped: boolean | null
+          player_name: string
+          role: string | null
+          set_name: string | null
+          set_number: number | null
+          sold_price: number | null
+          sold_to_team: string | null
+          status: string
+        }
+        Insert: {
+          age?: number | null
+          base_price?: number
+          batting_style?: string | null
+          bowling_style?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          ipl_caps?: number | null
+          is_capped?: boolean | null
+          player_name: string
+          role?: string | null
+          set_name?: string | null
+          set_number?: number | null
+          sold_price?: number | null
+          sold_to_team?: string | null
+          status?: string
+        }
+        Update: {
+          age?: number | null
+          base_price?: number
+          batting_style?: string | null
+          bowling_style?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          ipl_caps?: number | null
+          is_capped?: boolean | null
+          player_name?: string
+          role?: string | null
+          set_name?: string | null
+          set_number?: number | null
+          sold_price?: number | null
+          sold_to_team?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auction_players_sold_to_team_fkey"
+            columns: ["sold_to_team"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      retained_players: {
+        Row: {
+          id: string
+          nationality: string | null
+          player_name: string
+          retention_price: number | null
+          role: string | null
+          team_id: string
+        }
+        Insert: {
+          id?: string
+          nationality?: string | null
+          player_name: string
+          retention_price?: number | null
+          role?: string | null
+          team_id: string
+        }
+        Update: {
+          id?: string
+          nationality?: string | null
+          player_name?: string
+          retention_price?: number | null
+          role?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retained_players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          overseas_slots: number
+          player_slots: number
+          short_name: string
+          spent_budget: number
+          total_budget: number
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          id?: string
+          name: string
+          overseas_slots?: number
+          player_slots?: number
+          short_name: string
+          spent_budget?: number
+          total_budget?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          overseas_slots?: number
+          player_slots?: number
+          short_name?: string
+          spent_budget?: number
+          total_budget?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
