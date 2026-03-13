@@ -70,9 +70,11 @@ export type Database = {
           bowling_style: string | null
           country: string | null
           created_at: string
+          current_bid: number | null
           id: string
           ipl_caps: number | null
           is_capped: boolean | null
+          leading_team_id: string | null
           player_name: string
           role: string | null
           set_name: string | null
@@ -88,9 +90,11 @@ export type Database = {
           bowling_style?: string | null
           country?: string | null
           created_at?: string
+          current_bid?: number | null
           id?: string
           ipl_caps?: number | null
           is_capped?: boolean | null
+          leading_team_id?: string | null
           player_name: string
           role?: string | null
           set_name?: string | null
@@ -106,9 +110,11 @@ export type Database = {
           bowling_style?: string | null
           country?: string | null
           created_at?: string
+          current_bid?: number | null
           id?: string
           ipl_caps?: number | null
           is_capped?: boolean | null
+          leading_team_id?: string | null
           player_name?: string
           role?: string | null
           set_name?: string | null

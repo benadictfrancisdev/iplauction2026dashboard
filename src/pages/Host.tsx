@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { BidTracker } from '@/components/BidTracker';
+import { RetainedPlayersPanel } from '@/components/RetainedPlayersPanel';
+import { AddPlayerModal } from '@/components/AddPlayerModal';
 
 const PASSCODE = 'IPL2026';
 
@@ -61,8 +64,6 @@ function HostDashboard() {
   const { toast } = useToast();
 
   const [search, setSearch] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState('');
-  const [soldPrice, setSoldPrice] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -76,61 +77,11 @@ function HostDashboard() {
   }, [auctionPlayers, search, filterRole, filterStatus]);
 
   const setAsCurrent = async (playerId: string) => {
-    // Clear any existing current player
-    await supabase.from('auction_players').update({ status: 'available' }).eq('status', 'current');
-    await supabase.from('auction_players').update({ status: 'current' }).eq('id', playerId);
+    await supabase.from('auction_players').update({ status: 'available', current_bid: null, leading_team_id: null } as any).eq('status', 'current');
+    const player = auctionPlayers.find(p => p.id === playerId);
+    const baseCr = player ? player.base_price / 100 : 0;
+    await supabase.from('auction_players').update({ status: 'current', current_bid: baseCr, leading_team_id: null } as any).eq('id', playerId);
     toast({ title: 'Player set as current' });
-    refetch();
-  };
-
-  const confirmSale = async () => {
-    if (!currentPlayer || !selectedTeam || !soldPrice) {
-      toast({ title: 'Fill all fields', variant: 'destructive' });
-      return;
-    }
-
-    const price = parseFloat(soldPrice);
-    const team = teams.find(t => t.id === selectedTeam);
-    if (!team) return;
-
-    // Update player
-    await supabase.from('auction_players').update({
-      status: 'sold',
-      sold_to_team: selectedTeam,
-      sold_price: price,
-    }).eq('id', currentPlayer.id);
-
-    // Update team budget
-    await supabase.from('teams').update({
-      spent_budget: team.spent_budget + price,
-    }).eq('id', selectedTeam);
-
-    // Log
-    await supabase.from('auction_log').insert({
-      player_id: currentPlayer.id,
-      team_id: selectedTeam,
-      player_name: currentPlayer.player_name,
-      team_name: team.short_name,
-      sold_price: price,
-      action: 'sold',
-    });
-
-    setSoldPrice('');
-    setSelectedTeam('');
-    toast({ title: `${currentPlayer.player_name} sold to ${team.short_name} for ₹${price} Cr!` });
-    refetch();
-  };
-
-  const markUnsold = async () => {
-    if (!currentPlayer) return;
-
-    await supabase.from('auction_players').update({ status: 'unsold' }).eq('id', currentPlayer.id);
-    await supabase.from('auction_log').insert({
-      player_name: currentPlayer.player_name,
-      action: 'unsold',
-    });
-
-    toast({ title: `${currentPlayer.player_name} marked as unsold` });
     refetch();
   };
 
@@ -138,7 +89,6 @@ function HostDashboard() {
     if (auctionLog.length === 0) return;
     const last = auctionLog[0];
     if (last.action !== 'sold') {
-      // Just remove the log entry for unsold
       await supabase.from('auction_log').delete().eq('id', last.id);
       if (last.player_id) {
         await supabase.from('auction_players').update({ status: 'available' }).eq('id', last.player_id);
@@ -148,7 +98,6 @@ function HostDashboard() {
       return;
     }
 
-    // Reverse sold
     if (last.player_id) {
       await supabase.from('auction_players').update({
         status: 'available',
@@ -189,54 +138,16 @@ function HostDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left: Current Player + Sell Controls */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* Current Player */}
-          {currentPlayer ? (
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full bg-live live-pulse" />
-                <span className="text-xs font-bold text-live uppercase">Now Auctioning</span>
-              </div>
-              <h2 className="font-display font-bold text-xl text-foreground">{currentPlayer.player_name}</h2>
-              <p className="text-xs text-muted-foreground">
-                {currentPlayer.role} | {currentPlayer.country} | Base: ₹{currentPlayer.base_price >= 100 ? `${(currentPlayer.base_price / 100).toFixed(2)} Cr` : `${currentPlayer.base_price} L`}
-              </p>
+      {/* Retained Players (collapsible) */}
+      <div className="mb-4">
+        <RetainedPlayersPanel teams={teams} retainedByTeam={retainedByTeam} />
+      </div>
 
-              <div className="mt-4 space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Sold To</label>
-                  <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams.map(t => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.short_name} — ₹{(t.total_budget - t.spent_budget).toFixed(2)} Cr left
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Sold Price (in Cr)</label>
-                  <Input
-                    type="number"
-                    step="0.05"
-                    min="0"
-                    value={soldPrice}
-                    onChange={e => setSoldPrice(e.target.value)}
-                    placeholder="e.g. 15.00"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={confirmSale} className="flex-1">✅ Confirm Sale</Button>
-                  <Button variant="outline" onClick={markUnsold} className="flex-1">❌ Unsold</Button>
-                </div>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left: Bid Tracker + Team Budgets */}
+        <div className="lg:col-span-1 space-y-4">
+          {currentPlayer ? (
+            <BidTracker currentPlayer={currentPlayer} teams={teams} onComplete={refetch} />
           ) : (
             <div className="bg-card border border-border rounded-lg p-4 text-center text-sm text-muted-foreground">
               No player currently being auctioned. Select one from the player list.
@@ -270,7 +181,10 @@ function HostDashboard() {
         <div className="lg:col-span-2">
           <div className="bg-card border border-border rounded-lg">
             <div className="p-3 border-b border-border">
-              <h3 className="font-display font-bold text-sm mb-2">Player Browser</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-display font-bold text-sm">Player Browser</h3>
+                <AddPlayerModal onAdded={refetch} />
+              </div>
               <div className="flex gap-2 flex-wrap">
                 <Input
                   placeholder="Search player..."
