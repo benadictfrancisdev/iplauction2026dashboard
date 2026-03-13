@@ -54,23 +54,10 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
 
         {/* Stats row */}
         <div className="flex gap-3 text-[10px] text-muted-foreground mb-2">
-          <span>🏏 {slotsLeft} player slots left</span>
-          <span>🌍 {overseasLeft} overseas slots left</span>
+          <span>🏏 {slotsLeft} slots left</span>
+          <span>🌍 {overseasLeft} overseas left</span>
+          {retained.length > 0 && <span>🔒 {retained.length} retained</span>}
         </div>
-
-        {/* Retained */}
-        {retained.length > 0 && (
-          <div className="mb-2">
-            <div className="text-[10px] text-muted-foreground mb-1">Retained ({retained.length})</div>
-            <div className="space-y-0.5">
-              {retained.map(p => (
-                <div key={p.id} className="text-[11px] text-muted-foreground/70 truncate">
-                  • {p.player_name}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Auction buys */}
         {soldPlayers.length > 0 && (

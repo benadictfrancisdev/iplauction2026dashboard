@@ -1,7 +1,6 @@
 import { useAuctionData } from '@/hooks/useAuctionData';
 import { TeamCard } from '@/components/TeamCard';
 import { CurrentPlayerSpotlight } from '@/components/CurrentPlayerSpotlight';
-import { SquadSummary } from '@/components/SquadSummary';
 import { AuctionLogFeed } from '@/components/AuctionLogFeed';
 import { LiveIndicator } from '@/components/LiveIndicator';
 import { Link } from 'react-router-dom';
@@ -54,10 +53,10 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Current Player Spotlight */}
+      {/* Current Player Spotlight — Large & Dominant */}
       {currentPlayer && (
         <div className="mb-4">
-          <CurrentPlayerSpotlight player={currentPlayer} />
+          <CurrentPlayerSpotlight player={currentPlayer} teams={teams} />
         </div>
       )}
 
@@ -79,18 +78,9 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Bottom: Summary + Log */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2">
-          <SquadSummary
-            teams={teams}
-            soldPlayersByTeam={soldPlayersByTeam}
-            retainedByTeam={retainedByTeam}
-          />
-        </div>
-        <div>
-          <AuctionLogFeed log={auctionLog} />
-        </div>
+      {/* Auction Log */}
+      <div className="max-w-lg">
+        <AuctionLogFeed log={auctionLog} />
       </div>
     </div>
   );
