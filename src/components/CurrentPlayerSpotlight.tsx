@@ -7,9 +7,10 @@ type Team = Database['public']['Tables']['teams']['Row'];
 interface Props {
   player: AuctionPlayer | null;
   teams?: Team[];
+  fullscreen?: boolean;
 }
 
-export function CurrentPlayerSpotlight({ player, teams }: Props) {
+export function CurrentPlayerSpotlight({ player, teams, fullscreen }: Props) {
   if (!player) return null;
 
   const basePriceInCr = player.base_price >= 100
@@ -28,27 +29,40 @@ export function CurrentPlayerSpotlight({ player, teams }: Props) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="rounded-xl border-2 border-live/50 bg-card relative overflow-hidden"
-      style={{ minHeight: '200px' }}
+      className={`rounded-xl border-2 border-live/50 bg-card relative overflow-hidden ${
+        fullscreen ? 'min-h-[60vh]' : 'min-h-[200px]'
+      }`}
     >
       {/* Animated border glow */}
       <div className="absolute inset-0 rounded-xl border-2 border-live/30 live-pulse pointer-events-none" />
 
-      <div className="p-6 md:p-8 flex flex-col justify-between h-full">
+      <div className={`flex flex-col justify-center h-full ${
+        fullscreen ? 'p-10 md:p-16 min-h-[60vh]' : 'p-6 md:p-8'
+      }`}>
         {/* Top row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-live live-pulse" />
-            <span className="text-sm font-bold text-live uppercase tracking-wider">Live — Now Auctioning</span>
+            <span className={`rounded-full bg-live live-pulse ${fullscreen ? 'w-4 h-4' : 'w-3 h-3'}`} />
+            <span className={`font-bold text-live uppercase tracking-wider ${fullscreen ? 'text-lg' : 'text-sm'}`}>
+              Live — Now Auctioning
+            </span>
           </div>
-          <span className="text-sm text-muted-foreground">Set {player.set_name || player.set_number}</span>
+          <span className={`text-muted-foreground ${fullscreen ? 'text-base' : 'text-sm'}`}>
+            Set {player.set_name || player.set_number}
+          </span>
         </div>
 
         {/* Main content */}
-        <div className="mt-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="mt-6 flex flex-col md:flex-row md:items-end justify-between gap-6 flex-1">
           <div>
-            <h2 className="font-display font-bold text-4xl md:text-5xl text-foreground">{player.player_name}</h2>
-            <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground flex-wrap">
+            <h2 className={`font-display font-bold text-foreground ${
+              fullscreen ? 'text-6xl md:text-8xl' : 'text-4xl md:text-5xl'
+            }`}>
+              {player.player_name}
+            </h2>
+            <div className={`flex items-center gap-3 mt-3 text-muted-foreground flex-wrap ${
+              fullscreen ? 'text-lg' : 'text-sm'
+            }`}>
               <span className="font-medium text-foreground/80">{player.role}</span>
               <span>•</span>
               <span>{player.country}</span>
@@ -67,21 +81,25 @@ export function CurrentPlayerSpotlight({ player, teams }: Props) {
             </div>
           </div>
 
-          <div className="flex items-end gap-6">
+          <div className="flex items-end gap-8">
             {/* Base Price */}
             <div className="text-right">
-              <div className="text-xs text-muted-foreground">Base Price</div>
-              <div className="font-display font-bold text-lg text-primary">{basePriceInCr}</div>
+              <div className={`text-muted-foreground ${fullscreen ? 'text-sm' : 'text-xs'}`}>Base Price</div>
+              <div className={`font-display font-bold text-primary ${fullscreen ? 'text-2xl' : 'text-lg'}`}>
+                {basePriceInCr}
+              </div>
             </div>
 
-            {/* Current Bid - prominent */}
+            {/* Current Bid */}
             <div className="text-right">
-              <div className="text-xs text-muted-foreground">Current Bid</div>
-              <div className="font-display font-bold text-3xl md:text-4xl text-live">
+              <div className={`text-muted-foreground ${fullscreen ? 'text-sm' : 'text-xs'}`}>Current Bid</div>
+              <div className={`font-display font-bold text-live ${
+                fullscreen ? 'text-5xl md:text-7xl' : 'text-3xl md:text-4xl'
+              }`}>
                 {currentBidDisplay}
               </div>
               {leadingTeam && (
-                <div className="text-xs mt-1 font-medium" style={{ color: leadingTeam.color }}>
+                <div className={`mt-1 font-medium ${fullscreen ? 'text-base' : 'text-xs'}`} style={{ color: leadingTeam.color }}>
                   ▲ {leadingTeam.short_name}
                 </div>
               )}
