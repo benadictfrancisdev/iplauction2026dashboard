@@ -29,6 +29,17 @@ const Index = () => {
     );
   }
 
+  // Fullscreen mode when a player is being auctioned
+  if (currentPlayer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-[1400px]">
+          <CurrentPlayerSpotlight player={currentPlayer} teams={teams} fullscreen />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 max-w-[1400px] mx-auto">
       {/* Top Bar */}
@@ -52,13 +63,6 @@ const Index = () => {
           </Button>
         </div>
       </div>
-
-      {/* Current Player Spotlight — Large & Dominant */}
-      {currentPlayer && (
-        <div className="mb-4">
-          <CurrentPlayerSpotlight player={currentPlayer} teams={teams} />
-        </div>
-      )}
 
       {/* Team Overview Grid */}
       <div className="mb-4">
