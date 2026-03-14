@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { BidTracker } from '@/components/BidTracker';
-import { RetainedPlayersPanel } from '@/components/RetainedPlayersPanel';
+
 import { AddPlayerModal } from '@/components/AddPlayerModal';
 
 const PASSCODE = 'IPL2026';
@@ -138,10 +138,6 @@ function HostDashboard() {
         </div>
       </div>
 
-      {/* Retained Players (collapsible) */}
-      <div className="mb-4">
-        <RetainedPlayersPanel teams={teams} retainedByTeam={retainedByTeam} />
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Bid Tracker + Team Budgets */}
