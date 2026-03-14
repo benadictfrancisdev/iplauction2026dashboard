@@ -154,14 +154,13 @@ function HostDashboard() {
             <div className="space-y-1">
               {teams.map(t => {
                 const remaining = t.total_budget - t.spent_budget;
-                const retained = retainedByTeam(t.id);
                 const sold = soldPlayersByTeam(t.id);
                 return (
                   <div key={t.id} className="flex items-center justify-between text-xs py-1">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.color }} />
                       <span className="font-medium">{t.short_name}</span>
-                      <span className="text-muted-foreground">({retained.length + sold.length}/{t.player_slots})</span>
+                      <span className="text-muted-foreground">({sold.length}/{t.player_slots})</span>
                     </div>
                     <span style={{ color: t.color }} className="font-medium">₹{remaining.toFixed(2)} Cr</span>
                   </div>
