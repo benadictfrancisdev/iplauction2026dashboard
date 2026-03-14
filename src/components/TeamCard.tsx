@@ -13,10 +13,9 @@ interface TeamCardProps {
 
 export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
   const remaining = team.total_budget - team.spent_budget;
-  const totalPlayers = retained.length + soldPlayers.length;
+  const totalPlayers = soldPlayers.length;
   const overseasSold = soldPlayers.filter(p => p.country !== 'India').length;
-  const overseasRetained = retained.filter(p => p.nationality !== 'India').length;
-  const overseasLeft = team.overseas_slots - overseasSold - overseasRetained;
+  const overseasLeft = team.overseas_slots - overseasSold;
   const slotsLeft = team.player_slots - totalPlayers;
 
   return (
@@ -56,7 +55,6 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
         <div className="flex gap-3 text-[10px] text-muted-foreground mb-2">
           <span>🏏 {slotsLeft} slots left</span>
           <span>🌍 {overseasLeft} overseas left</span>
-          {retained.length > 0 && <span>🔒 {retained.length} retained</span>}
         </div>
 
         {/* Auction buys */}
