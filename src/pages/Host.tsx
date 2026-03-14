@@ -137,11 +137,6 @@ function HostDashboard() {
         </div>
       </div>
 
-      {/* Marquee Players - Priority List */}
-      <div className="mb-4">
-        <MarqueePlayersPanel auctionPlayers={auctionPlayers} onSetCurrent={setAsCurrent} />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Bid Tracker + Team Budgets */}
         <div className="lg:col-span-1 space-y-4">
