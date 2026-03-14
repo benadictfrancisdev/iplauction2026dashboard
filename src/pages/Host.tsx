@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { BidTracker } from '@/components/BidTracker';
-import { RetainedPlayersPanel } from '@/components/RetainedPlayersPanel';
+
 import { AddPlayerModal } from '@/components/AddPlayerModal';
 
 const PASSCODE = 'IPL2026';
