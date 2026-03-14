@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { BidTracker } from '@/components/BidTracker';
-
 import { AddPlayerModal } from '@/components/AddPlayerModal';
+import { MarqueePlayersPanel } from '@/components/MarqueePlayersPanel';
 
 const PASSCODE = 'IPL2026';
 
@@ -138,6 +138,10 @@ function HostDashboard() {
         </div>
       </div>
 
+      {/* Marquee Players - Priority List */}
+      <div className="mb-4">
+        <MarqueePlayersPanel auctionPlayers={auctionPlayers} onSetCurrent={setAsCurrent} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Bid Tracker + Team Budgets */}
