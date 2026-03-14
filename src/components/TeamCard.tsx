@@ -55,7 +55,6 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
         <div className="flex gap-3 text-[10px] text-muted-foreground mb-2">
           <span>🏏 {slotsLeft} slots left</span>
           <span>🌍 {overseasLeft} overseas left</span>
-          {retained.length > 0 && <span>🔒 {retained.length} retained</span>}
         </div>
 
         {/* Auction buys */}
