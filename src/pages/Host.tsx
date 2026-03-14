@@ -8,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { BidTracker } from '@/components/BidTracker';
 import { AddPlayerModal } from '@/components/AddPlayerModal';
-import { MarqueePlayersPanel } from '@/components/MarqueePlayersPanel';
 
 const PASSCODE = 'IPL2026';
 
