@@ -65,15 +65,29 @@ function HostDashboard() {
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSet, setFilterSet] = useState('all');
+
+  const setNumbers = useMemo(() => {
+    const sets = new Map<number, { name: string; count: number }>();
+    auctionPlayers.forEach(p => {
+      const num = p.set_number ?? -1;
+      if (!sets.has(num)) {
+        sets.set(num, { name: p.set_name || `Set ${num}`, count: 0 });
+      }
+      sets.get(num)!.count++;
+    });
+    return Array.from(sets.entries()).sort((a, b) => a[0] - b[0]);
+  }, [auctionPlayers]);
 
   const filteredPlayers = useMemo(() => {
     return auctionPlayers.filter(p => {
       const matchSearch = !search || p.player_name.toLowerCase().includes(search.toLowerCase());
       const matchRole = filterRole === 'all' || p.role === filterRole;
       const matchStatus = filterStatus === 'all' || p.status === filterStatus;
-      return matchSearch && matchRole && matchStatus;
-    }).slice(0, 50);
-  }, [auctionPlayers, search, filterRole, filterStatus]);
+      const matchSet = filterSet === 'all' || String(p.set_number) === filterSet;
+      return matchSearch && matchRole && matchStatus && matchSet;
+    }).slice(0, 100);
+  }, [auctionPlayers, search, filterRole, filterStatus, filterSet]);
 
   const setAsCurrent = async (playerId: string) => {
     await supabase.from('auction_players').update({ status: 'available', current_bid: null, leading_team_id: null } as any).eq('status', 'current');
