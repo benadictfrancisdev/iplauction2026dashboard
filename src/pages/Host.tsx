@@ -65,15 +65,29 @@ function HostDashboard() {
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSet, setFilterSet] = useState('all');
+
+  const setNumbers = useMemo(() => {
+    const sets = new Map<number, { name: string; count: number }>();
+    auctionPlayers.forEach(p => {
+      const num = p.set_number ?? -1;
+      if (!sets.has(num)) {
+        sets.set(num, { name: p.set_name || `Set ${num}`, count: 0 });
+      }
+      sets.get(num)!.count++;
+    });
+    return Array.from(sets.entries()).sort((a, b) => a[0] - b[0]);
+  }, [auctionPlayers]);
 
   const filteredPlayers = useMemo(() => {
     return auctionPlayers.filter(p => {
       const matchSearch = !search || p.player_name.toLowerCase().includes(search.toLowerCase());
       const matchRole = filterRole === 'all' || p.role === filterRole;
       const matchStatus = filterStatus === 'all' || p.status === filterStatus;
-      return matchSearch && matchRole && matchStatus;
-    }).slice(0, 50);
-  }, [auctionPlayers, search, filterRole, filterStatus]);
+      const matchSet = filterSet === 'all' || String(p.set_number) === filterSet;
+      return matchSearch && matchRole && matchStatus && matchSet;
+    }).slice(0, 100);
+  }, [auctionPlayers, search, filterRole, filterStatus, filterSet]);
 
   const setAsCurrent = async (playerId: string) => {
     await supabase.from('auction_players').update({ status: 'available', current_bid: null, leading_team_id: null } as any).eq('status', 'current');
@@ -175,7 +189,12 @@ function HostDashboard() {
           <div className="bg-card border border-border rounded-lg">
             <div className="p-3 border-b border-border">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-display font-bold text-sm">Player Browser</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display font-bold text-sm">Player Browser</h3>
+                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    {auctionPlayers.length} players · {filteredPlayers.length} shown
+                  </span>
+                </div>
                 <AddPlayerModal onAdded={refetch} />
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -183,10 +202,23 @@ function HostDashboard() {
                   placeholder="Search player..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="flex-1 min-w-[200px] h-8 text-xs"
+                  className="flex-1 min-w-[150px] h-8 text-xs"
                 />
+                <Select value={filterSet} onValueChange={setFilterSet}>
+                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <SelectItem value="all">All Sets</SelectItem>
+                    {setNumbers.map(([num, { name, count }]) => (
+                      <SelectItem key={num} value={String(num)}>
+                        {name} ({count})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={filterRole} onValueChange={setFilterRole}>
-                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                  <SelectTrigger className="w-[130px] h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -198,7 +230,7 @@ function HostDashboard() {
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[130px] h-8 text-xs">
+                  <SelectTrigger className="w-[120px] h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
