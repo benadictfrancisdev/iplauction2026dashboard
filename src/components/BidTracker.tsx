@@ -1,9 +1,37 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
+
+function playSoldSound() {
+  const ctx = new AudioContext();
+  // Gavel hit — sharp percussive knock
+  const hit = ctx.createOscillator();
+  const hitGain = ctx.createGain();
+  hit.type = 'square';
+  hit.frequency.setValueAtTime(200, ctx.currentTime);
+  hit.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.15);
+  hitGain.gain.setValueAtTime(0.6, ctx.currentTime);
+  hitGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+  hit.connect(hitGain).connect(ctx.destination);
+  hit.start(ctx.currentTime);
+  hit.stop(ctx.currentTime + 0.2);
+
+  // Celebratory chime
+  const chime = ctx.createOscillator();
+  const chimeGain = ctx.createGain();
+  chime.type = 'sine';
+  chime.frequency.setValueAtTime(523, ctx.currentTime + 0.25);
+  chime.frequency.setValueAtTime(659, ctx.currentTime + 0.4);
+  chime.frequency.setValueAtTime(784, ctx.currentTime + 0.55);
+  chimeGain.gain.setValueAtTime(0.3, ctx.currentTime + 0.25);
+  chimeGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.9);
+  chime.connect(chimeGain).connect(ctx.destination);
+  chime.start(ctx.currentTime + 0.25);
+  chime.stop(ctx.currentTime + 0.9);
+}
 
 type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
 type Team = Database['public']['Tables']['teams']['Row'];
