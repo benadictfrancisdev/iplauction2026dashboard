@@ -13,6 +13,8 @@ interface Props {
 export function CurrentPlayerSpotlight({ player, teams, fullscreen }: Props) {
   if (!player) return null;
 
+  const imageUrl = (player as any).image_url as string | null;
+  const hasImage = imageUrl && imageUrl !== 'none';
   const basePriceInCr = player.base_price >= 100
     ? `₹${(player.base_price / 100).toFixed(2)} Cr`
     : `₹${player.base_price} L`;
