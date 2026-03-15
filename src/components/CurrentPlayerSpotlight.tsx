@@ -13,6 +13,8 @@ interface Props {
 export function CurrentPlayerSpotlight({ player, teams, fullscreen }: Props) {
   if (!player) return null;
 
+  const imageUrl = (player as any).image_url as string | null;
+  const hasImage = imageUrl && imageUrl !== 'none';
   const basePriceInCr = player.base_price >= 100
     ? `₹${(player.base_price / 100).toFixed(2)} Cr`
     : `₹${player.base_price} L`;
@@ -54,30 +56,41 @@ export function CurrentPlayerSpotlight({ player, teams, fullscreen }: Props) {
 
         {/* Main content */}
         <div className="mt-6 flex flex-col md:flex-row md:items-end justify-between gap-6 flex-1">
-          <div>
-            <h2 className={`font-display font-bold text-foreground ${
-              fullscreen ? 'text-6xl md:text-8xl' : 'text-4xl md:text-5xl'
-            }`}>
-              {player.player_name}
-            </h2>
-            <div className={`flex items-center gap-3 mt-3 text-muted-foreground flex-wrap ${
-              fullscreen ? 'text-lg' : 'text-sm'
-            }`}>
-              <span className="font-medium text-foreground/80">{player.role}</span>
-              <span>•</span>
-              <span>{player.country}</span>
-              {player.age && (
-                <>
-                  <span>•</span>
-                  <span>Age {player.age}</span>
-                </>
-              )}
-              {player.ipl_caps ? (
-                <>
-                  <span>•</span>
-                  <span>{player.ipl_caps} IPL Caps</span>
-                </>
-              ) : null}
+          <div className="flex items-center gap-6">
+            {hasImage && (
+              <img
+                src={imageUrl}
+                alt={player.player_name}
+                className={`rounded-xl object-cover border-2 border-border/50 ${
+                  fullscreen ? 'w-40 h-40 md:w-52 md:h-52' : 'w-20 h-20'
+                }`}
+              />
+            )}
+            <div>
+              <h2 className={`font-display font-bold text-foreground ${
+                fullscreen ? 'text-6xl md:text-8xl' : 'text-4xl md:text-5xl'
+              }`}>
+                {player.player_name}
+              </h2>
+              <div className={`flex items-center gap-3 mt-3 text-muted-foreground flex-wrap ${
+                fullscreen ? 'text-lg' : 'text-sm'
+              }`}>
+                <span className="font-medium text-foreground/80">{player.role}</span>
+                <span>•</span>
+                <span>{player.country}</span>
+                {player.age && (
+                  <>
+                    <span>•</span>
+                    <span>Age {player.age}</span>
+                  </>
+                )}
+                {player.ipl_caps ? (
+                  <>
+                    <span>•</span>
+                    <span>{player.ipl_caps} IPL Caps</span>
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
 

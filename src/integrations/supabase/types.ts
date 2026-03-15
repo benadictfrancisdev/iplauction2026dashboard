@@ -72,6 +72,7 @@ export type Database = {
           created_at: string
           current_bid: number | null
           id: string
+          image_url: string | null
           ipl_caps: number | null
           is_capped: boolean | null
           leading_team_id: string | null
@@ -92,6 +93,7 @@ export type Database = {
           created_at?: string
           current_bid?: number | null
           id?: string
+          image_url?: string | null
           ipl_caps?: number | null
           is_capped?: boolean | null
           leading_team_id?: string | null
@@ -112,6 +114,7 @@ export type Database = {
           created_at?: string
           current_bid?: number | null
           id?: string
+          image_url?: string | null
           ipl_caps?: number | null
           is_capped?: boolean | null
           leading_team_id?: string | null
