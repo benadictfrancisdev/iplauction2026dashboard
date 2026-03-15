@@ -115,6 +115,7 @@ export function BidTracker({ currentPlayer, teams, onComplete }: Props) {
 
     setSoldPrice('');
     setSelectedTeam('');
+    playSoldSound();
     toast({ title: `${currentPlayer.player_name} sold to ${team.short_name} for ₹${price.toFixed(2)} Cr!` });
     onComplete();
   };
