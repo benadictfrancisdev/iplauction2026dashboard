@@ -1,5 +1,7 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Database } from '@/integrations/supabase/types';
+import { ChevronDown } from 'lucide-react';
 
 type Team = Database['public']['Tables']['teams']['Row'];
 type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
@@ -12,38 +14,37 @@ interface TeamCardProps {
 }
 
 export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
+  const [expanded, setExpanded] = useState(false);
   const remaining = team.total_budget - team.spent_budget;
   const totalPlayers = soldPlayers.length;
   const overseasSold = soldPlayers.filter(p => p.country !== 'India').length;
   const overseasLeft = team.overseas_slots - overseasSold;
   const slotsLeft = team.player_slots - totalPlayers;
 
-  // Top 3 highest bids for this team
   const topBids = [...soldPlayers]
     .filter(p => p.sold_price != null)
     .sort((a, b) => (b.sold_price ?? 0) - (a.sold_price ?? 0))
     .slice(0, 3);
 
+  const hasSquad = retained.length > 0 || soldPlayers.length > 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-lg overflow-hidden border border-border/50"
+      className="rounded-lg overflow-hidden border border-border/50 cursor-pointer select-none"
       style={{
         background: `linear-gradient(135deg, ${team.color}22 0%, hsl(220 18% 10%) 100%)`,
         borderLeft: `3px solid ${team.color}`,
       }}
+      onClick={() => hasSquad && setExpanded(!expanded)}
     >
       <div className="p-3">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             {team.logo_url && (
-              <img
-                src={team.logo_url}
-                alt={team.short_name}
-                className="w-8 h-8 object-contain"
-              />
+              <img src={team.logo_url} alt={team.short_name} className="w-8 h-8 object-contain" />
             )}
             <div>
               <span
@@ -55,7 +56,14 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
               <span className="text-sm text-muted-foreground ml-2">{team.name}</span>
             </div>
           </div>
-          <span className="font-display font-bold text-sm text-foreground">{totalPlayers}/{team.player_slots}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-display font-bold text-sm text-foreground">{totalPlayers}/{team.player_slots}</span>
+            {hasSquad && (
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+              />
+            )}
+          </div>
         </div>
 
         {/* Budget */}
@@ -67,7 +75,7 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
         </div>
 
         {/* Stats row */}
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2">
           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md bg-primary/15 text-primary border border-primary/20">
             🏏 {slotsLeft} slots left
           </span>
@@ -75,36 +83,78 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
             ✈️ {overseasLeft} overseas left
           </span>
         </div>
-
-        {/* Top 3 Highest Bids */}
-        {topBids.length > 0 && (
-          <div className="border-t border-border/40 pt-2">
-            <div className="text-[10px] text-muted-foreground mb-1 font-semibold uppercase tracking-wider">
-              Top Buys
-            </div>
-            <div className="space-y-1">
-              {topBids.map((p, i) => (
-                <div key={p.id} className="text-xs flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <span className="font-display font-bold text-muted-foreground w-4">{i + 1}.</span>
-                    <span className="text-foreground font-medium truncate">{p.player_name}</span>
-                  </span>
-                  <span className="text-sold font-bold text-xs ml-1 whitespace-nowrap">₹{p.sold_price?.toFixed(2)} Cr</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Remaining auction buys */}
-        {soldPlayers.length > 3 && (
-          <div className="mt-1">
-            <div className="text-[10px] text-muted-foreground">
-              +{soldPlayers.length - 3} more players
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Expanded Squad Details */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-3 space-y-3">
+              <div className="border-t border-border/40 pt-2" />
+
+              {/* Retained Players */}
+              {retained.length > 0 && (
+                <div>
+                  <div className="text-[10px] text-muted-foreground mb-1.5 font-semibold uppercase tracking-wider">
+                    Retained ({retained.length})
+                  </div>
+                  <div className="space-y-1">
+                    {retained.map(p => (
+                      <div key={p.id} className="text-xs flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <span className="text-foreground font-medium">{p.player_name}</span>
+                          <span className="text-muted-foreground">· {p.role}</span>
+                          {p.nationality && p.nationality !== 'India' && (
+                            <span className="text-[10px] text-accent">✈️</span>
+                          )}
+                        </span>
+                        {p.retention_price != null && (
+                          <span className="text-primary font-bold whitespace-nowrap">₹{p.retention_price} Cr</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bought Players */}
+              {soldPlayers.length > 0 && (
+                <div>
+                  <div className="text-[10px] text-muted-foreground mb-1.5 font-semibold uppercase tracking-wider">
+                    Bought ({soldPlayers.length})
+                  </div>
+                  <div className="space-y-1">
+                    {[...soldPlayers]
+                      .sort((a, b) => (b.sold_price ?? 0) - (a.sold_price ?? 0))
+                      .map(p => (
+                        <div key={p.id} className="text-xs flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: team.color }} />
+                            <span className="text-foreground font-medium">{p.player_name}</span>
+                            <span className="text-muted-foreground">· {p.role}</span>
+                            {p.country && p.country !== 'India' && (
+                              <span className="text-[10px] text-accent">✈️</span>
+                            )}
+                          </span>
+                          <span className="font-bold whitespace-nowrap" style={{ color: team.color }}>
+                            ₹{p.sold_price?.toFixed(2)} Cr
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
