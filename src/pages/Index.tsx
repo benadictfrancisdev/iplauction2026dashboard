@@ -92,37 +92,15 @@ const Index = () => {
               <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
               <span className="text-[10px] text-muted-foreground">Purse, player slots & overseas slots</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-3 md:pt-4">
-                {teams.slice(0, 3).map(team => (
-                  <TeamCard
-                    key={team.id}
-                    team={team}
-                    retained={retainedByTeam(team.id)}
-                    soldPlayers={soldPlayersByTeam(team.id)}
-                  />
-                ))}
-              </div>
-              <div className="flex flex-col gap-3">
-                {teams.slice(3, 7).map(team => (
-                  <TeamCard
-                    key={team.id}
-                    team={team}
-                    retained={retainedByTeam(team.id)}
-                    soldPlayers={soldPlayersByTeam(team.id)}
-                  />
-                ))}
-              </div>
-              <div className="flex flex-col gap-3 md:pt-8">
-                {teams.slice(7, 10).map(team => (
-                  <TeamCard
-                    key={team.id}
-                    team={team}
-                    retained={retainedByTeam(team.id)}
-                    soldPlayers={soldPlayersByTeam(team.id)}
-                  />
-                ))}
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {teams.map(team => (
+                <TeamCard
+                  key={team.id}
+                  team={team}
+                  retained={retainedByTeam(team.id)}
+                  soldPlayers={soldPlayersByTeam(team.id)}
+                />
+              ))}
             </div>
           </div>
 
