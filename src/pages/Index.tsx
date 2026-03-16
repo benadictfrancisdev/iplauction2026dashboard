@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useAuctionData } from '@/hooks/useAuctionData';
 import { TeamCard } from '@/components/TeamCard';
 import { CurrentPlayerSpotlight } from '@/components/CurrentPlayerSpotlight';
 import { AuctionLogFeed } from '@/components/AuctionLogFeed';
+import { AuctionSummary } from '@/components/AuctionSummary';
 import { LiveIndicator } from '@/components/LiveIndicator';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +11,8 @@ import { Button } from '@/components/ui/button';
 const Index = () => {
   const {
     teams,
+    auctionPlayers,
+    retainedPlayers,
     auctionLog,
     currentPlayer,
     isLive,
@@ -17,6 +21,8 @@ const Index = () => {
     retainedByTeam,
     refetch,
   } = useAuctionData();
+
+  const [showSummary, setShowSummary] = useState(false);
 
   if (loading) {
     return (
@@ -53,6 +59,14 @@ const Index = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant={showSummary ? "default" : "outline"}
+            size="sm"
+            className="text-xs"
+            onClick={() => setShowSummary(!showSummary)}
+          >
+            {showSummary ? '← Live View' : '📊 Auction Summary'}
+          </Button>
           <Link to="/host">
             <Button variant="outline" size="sm" className="text-xs">
               Open Auction Room
@@ -64,53 +78,60 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Team Overview Grid */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
-          <span className="text-[10px] text-muted-foreground">Purse, player slots & overseas slots</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Left column - 3 teams */}
-          <div className="flex flex-col gap-3 md:pt-4">
-            {teams.slice(0, 3).map(team => (
-              <TeamCard
-                key={team.id}
-                team={team}
-                retained={retainedByTeam(team.id)}
-                soldPlayers={soldPlayersByTeam(team.id)}
-              />
-            ))}
+      {showSummary ? (
+        <AuctionSummary
+          teams={teams}
+          auctionPlayers={auctionPlayers}
+          retainedPlayers={retainedPlayers}
+        />
+      ) : (
+        <>
+          {/* Team Overview Grid */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
+              <span className="text-[10px] text-muted-foreground">Purse, player slots & overseas slots</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-3 md:pt-4">
+                {teams.slice(0, 3).map(team => (
+                  <TeamCard
+                    key={team.id}
+                    team={team}
+                    retained={retainedByTeam(team.id)}
+                    soldPlayers={soldPlayersByTeam(team.id)}
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col gap-3">
+                {teams.slice(3, 7).map(team => (
+                  <TeamCard
+                    key={team.id}
+                    team={team}
+                    retained={retainedByTeam(team.id)}
+                    soldPlayers={soldPlayersByTeam(team.id)}
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col gap-3 md:pt-8">
+                {teams.slice(7, 10).map(team => (
+                  <TeamCard
+                    key={team.id}
+                    team={team}
+                    retained={retainedByTeam(team.id)}
+                    soldPlayers={soldPlayersByTeam(team.id)}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-          {/* Center column - 4 teams */}
-          <div className="flex flex-col gap-3">
-            {teams.slice(3, 7).map(team => (
-              <TeamCard
-                key={team.id}
-                team={team}
-                retained={retainedByTeam(team.id)}
-                soldPlayers={soldPlayersByTeam(team.id)}
-              />
-            ))}
-          </div>
-          {/* Right column - 3 teams */}
-          <div className="flex flex-col gap-3 md:pt-8">
-            {teams.slice(7, 10).map(team => (
-              <TeamCard
-                key={team.id}
-                team={team}
-                retained={retainedByTeam(team.id)}
-                soldPlayers={soldPlayersByTeam(team.id)}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
 
-      {/* Auction Log */}
-      <div className="max-w-lg">
-        <AuctionLogFeed log={auctionLog} />
-      </div>
+          {/* Auction Log */}
+          <div className="max-w-lg">
+            <AuctionLogFeed log={auctionLog} />
+          </div>
+        </>
+      )}
     </div>
   );
 };
