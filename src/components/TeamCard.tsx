@@ -32,6 +32,13 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
+            {team.logo_url && (
+              <img
+                src={team.logo_url}
+                alt={team.short_name}
+                className="w-8 h-8 object-contain"
+              />
+            )}
             <span
               className="font-display font-bold text-sm px-2 py-0.5 rounded"
               style={{ backgroundColor: team.color, color: '#fff' }}
