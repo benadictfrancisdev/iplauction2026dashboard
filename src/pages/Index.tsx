@@ -4,6 +4,7 @@ import { TeamCard } from '@/components/TeamCard';
 import { CurrentPlayerSpotlight } from '@/components/CurrentPlayerSpotlight';
 import { AuctionLogFeed } from '@/components/AuctionLogFeed';
 import { AuctionSummary } from '@/components/AuctionSummary';
+import { TopBuys } from '@/components/TopBuys';
 import { LiveIndicator } from '@/components/LiveIndicator';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -104,9 +105,10 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Auction Log */}
-          <div className="max-w-lg">
+          {/* Auction Log + Top 10 Buys */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <AuctionLogFeed log={auctionLog} />
+            <TopBuys players={auctionPlayers} teams={teams} />
           </div>
         </>
       )}

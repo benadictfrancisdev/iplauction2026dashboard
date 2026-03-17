@@ -66,7 +66,6 @@ export function AuctionSummary({ teams, auctionPlayers, retainedPlayers }: Props
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left p-3 font-display font-semibold text-muted-foreground">Team</th>
                 <th className="text-center p-3 font-display font-semibold text-muted-foreground">Bought</th>
-                <th className="text-center p-3 font-display font-semibold text-muted-foreground">Retained</th>
                 <th className="text-center p-3 font-display font-semibold text-muted-foreground">Squad</th>
                 <th className="text-center p-3 font-display font-semibold text-muted-foreground">✈️ Overseas</th>
                 <th className="text-right p-3 font-display font-semibold text-muted-foreground">Spent</th>
@@ -92,7 +91,6 @@ export function AuctionSummary({ teams, auctionPlayers, retainedPlayers }: Props
                     </div>
                   </td>
                   <td className="text-center p-3 font-semibold text-foreground">{bought.length}</td>
-                  <td className="text-center p-3 text-muted-foreground">{retained.length}</td>
                   <td className="text-center p-3 font-semibold text-foreground">{totalSquad}</td>
                   <td className="text-center p-3 text-foreground">{overseas}</td>
                   <td className="text-right p-3 font-bold text-sold">₹{totalSpent.toFixed(2)} Cr</td>
