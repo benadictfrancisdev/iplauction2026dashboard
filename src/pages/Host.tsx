@@ -133,6 +133,29 @@ function HostDashboard() {
     refetch();
   };
 
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+
+  const restartAuction = async () => {
+    // Reset all players to available
+    await supabase.from('auction_players').update({
+      status: 'available',
+      sold_to_team: null,
+      sold_price: null,
+      current_bid: null,
+      leading_team_id: null,
+    } as any).neq('status', 'available');
+
+    // Reset all team budgets
+    await supabase.from('teams').update({ spent_budget: 0 }).gt('spent_budget', 0);
+
+    // Clear auction log
+    await supabase.from('auction_log').delete().gte('created_at', '2000-01-01');
+
+    setShowRestartConfirm(false);
+    toast({ title: 'Auction restarted! All data has been reset.' });
+    refetch();
+  };
+
   return (
     <div className="min-h-screen p-4 max-w-[1400px] mx-auto">
       {/* Header */}
@@ -148,8 +171,31 @@ function HostDashboard() {
           <Button variant="destructive" size="sm" className="text-xs" onClick={undoLastSale}>
             ↩ Undo Last
           </Button>
+          <Button variant="outline" size="sm" className="text-xs border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setShowRestartConfirm(true)}>
+            🔄 Restart Auction
+          </Button>
         </div>
       </div>
+
+      {/* Restart Confirmation Dialog */}
+      {showRestartConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg p-6 max-w-sm w-full space-y-4">
+            <h2 className="font-display font-bold text-lg text-foreground">⚠️ Restart Auction?</h2>
+            <p className="text-sm text-muted-foreground">
+              This will reset <strong>all players</strong> to available, clear <strong>all sales</strong>, reset <strong>all team budgets</strong>, and delete the <strong>auction log</strong>. This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="destructive" className="flex-1" onClick={restartAuction}>
+                Yes, Restart
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowRestartConfirm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Bid Tracker + Team Budgets */}
