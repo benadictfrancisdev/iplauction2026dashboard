@@ -104,9 +104,10 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Auction Log */}
-          <div className="max-w-lg">
+          {/* Auction Log + Top 10 Buys */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <AuctionLogFeed log={auctionLog} />
+            <TopBuys players={auctionPlayers} teams={teams} />
           </div>
         </>
       )}
