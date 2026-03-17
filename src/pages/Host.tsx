@@ -133,6 +133,29 @@ function HostDashboard() {
     refetch();
   };
 
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+
+  const restartAuction = async () => {
+    // Reset all players to available
+    await supabase.from('auction_players').update({
+      status: 'available',
+      sold_to_team: null,
+      sold_price: null,
+      current_bid: null,
+      leading_team_id: null,
+    } as any).neq('status', 'available');
+
+    // Reset all team budgets
+    await supabase.from('teams').update({ spent_budget: 0 }).gt('spent_budget', 0);
+
+    // Clear auction log
+    await supabase.from('auction_log').delete().gte('created_at', '2000-01-01');
+
+    setShowRestartConfirm(false);
+    toast({ title: 'Auction restarted! All data has been reset.' });
+    refetch();
+  };
+
   return (
     <div className="min-h-screen p-4 max-w-[1400px] mx-auto">
       {/* Header */}
