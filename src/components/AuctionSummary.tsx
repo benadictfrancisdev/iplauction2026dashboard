@@ -91,7 +91,6 @@ export function AuctionSummary({ teams, auctionPlayers, retainedPlayers }: Props
                     </div>
                   </td>
                   <td className="text-center p-3 font-semibold text-foreground">{bought.length}</td>
-                  <td className="text-center p-3 text-muted-foreground">{retained.length}</td>
                   <td className="text-center p-3 font-semibold text-foreground">{totalSquad}</td>
                   <td className="text-center p-3 text-foreground">{overseas}</td>
                   <td className="text-right p-3 font-bold text-sold">₹{totalSpent.toFixed(2)} Cr</td>
