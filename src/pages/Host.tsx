@@ -171,7 +171,31 @@ function HostDashboard() {
           <Button variant="destructive" size="sm" className="text-xs" onClick={undoLastSale}>
             ↩ Undo Last
           </Button>
+          <Button variant="outline" size="sm" className="text-xs border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setShowRestartConfirm(true)}>
+            🔄 Restart Auction
+          </Button>
         </div>
+      </div>
+
+      {/* Restart Confirmation Dialog */}
+      {showRestartConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg p-6 max-w-sm w-full space-y-4">
+            <h2 className="font-display font-bold text-lg text-foreground">⚠️ Restart Auction?</h2>
+            <p className="text-sm text-muted-foreground">
+              This will reset <strong>all players</strong> to available, clear <strong>all sales</strong>, reset <strong>all team budgets</strong>, and delete the <strong>auction log</strong>. This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="destructive" className="flex-1" onClick={restartAuction}>
+                Yes, Restart
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowRestartConfirm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
