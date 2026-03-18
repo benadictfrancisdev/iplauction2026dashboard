@@ -101,6 +101,15 @@ function HostDashboard() {
   const undoLastSale = async () => {
     if (auctionLog.length === 0) return;
     const last = auctionLog[0];
+    if (last.action === 'unsold') {
+      await supabase.from('auction_log').delete().eq('id', last.id);
+      if (last.player_id) {
+        await supabase.from('auction_players').update({ status: 'available', current_bid: null, leading_team_id: null } as any).eq('id', last.player_id);
+      }
+      toast({ title: `Undo: ${last.player_name} set back to available` });
+      refetch();
+      return;
+    }
     if (last.action !== 'sold') {
       await supabase.from('auction_log').delete().eq('id', last.id);
       if (last.player_id) {
