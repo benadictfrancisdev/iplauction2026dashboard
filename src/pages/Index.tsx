@@ -6,6 +6,7 @@ import { AuctionLogFeed } from '@/components/AuctionLogFeed';
 import { AuctionSummary } from '@/components/AuctionSummary';
 import { TopBuys } from '@/components/TopBuys';
 import { LiveIndicator } from '@/components/LiveIndicator';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
@@ -60,6 +61,7 @@ const Index = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Button
             variant={showSummary ? "default" : "outline"}
             size="sm"
@@ -93,25 +95,10 @@ const Index = () => {
               <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
               <span className="text-[10px] text-muted-foreground">Purse, player slots & overseas slots</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Column 1: teams 0-2 */}
-              <div className="space-y-4">
-                {teams.slice(0, 3).map(team => (
-                  <TeamCard key={team.id} team={team} retained={retainedByTeam(team.id)} soldPlayers={soldPlayersByTeam(team.id)} />
-                ))}
-              </div>
-              {/* Column 2: teams 3-6 */}
-              <div className="space-y-4">
-                {teams.slice(3, 7).map(team => (
-                  <TeamCard key={team.id} team={team} retained={retainedByTeam(team.id)} soldPlayers={soldPlayersByTeam(team.id)} />
-                ))}
-              </div>
-              {/* Column 3: teams 7-9 */}
-              <div className="space-y-4">
-                {teams.slice(7, 10).map(team => (
-                  <TeamCard key={team.id} team={team} retained={retainedByTeam(team.id)} soldPlayers={soldPlayersByTeam(team.id)} />
-                ))}
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {teams.map(team => (
+                <TeamCard key={team.id} team={team} retained={retainedByTeam(team.id)} soldPlayers={soldPlayersByTeam(team.id)} />
+              ))}
             </div>
           </div>
 
