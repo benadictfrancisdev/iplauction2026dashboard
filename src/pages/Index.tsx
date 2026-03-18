@@ -6,6 +6,7 @@ import { AuctionLogFeed } from '@/components/AuctionLogFeed';
 import { AuctionSummary } from '@/components/AuctionSummary';
 import { TopBuys } from '@/components/TopBuys';
 import { LiveIndicator } from '@/components/LiveIndicator';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
