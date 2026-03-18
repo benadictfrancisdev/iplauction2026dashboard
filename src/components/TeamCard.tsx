@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Database } from '@/integrations/supabase/types';
 import { ChevronDown } from 'lucide-react';
@@ -13,18 +13,68 @@ interface TeamCardProps {
   soldPlayers: AuctionPlayer[];
 }
 
+const ROLE_CATEGORIES = [
+  { label: 'Batsmen', keys: ['BATTER', 'BATSMAN', 'BATSMEN', 'BAT'] },
+  { label: 'WK', keys: ['WICKETKEEPER', 'WK', 'WICKET-KEEPER', 'WK-BATTER'] },
+  { label: 'Allrounder', keys: ['ALL-ROUNDER', 'ALLROUNDER', 'ALL ROUNDER', 'AR'] },
+  { label: 'Fast Bowler', keys: ['FAST BOWLER', 'PACER', 'PACE', 'SEAMER', 'FAST'] },
+  { label: 'Spinner', keys: ['SPINNER', 'SPIN', 'SPIN BOWLER'] },
+];
+
+function categorizeRole(role: string | null): string {
+  if (!role) return 'Batsmen';
+  const upper = role.toUpperCase().trim();
+  // Check if role contains "BOWL" but not "ALL" for generic bowlers
+  for (const cat of ROLE_CATEGORIES) {
+    if (cat.keys.some(k => upper.includes(k) || upper === k)) return cat.label;
+  }
+  // Fallback: if contains BOWL, guess based on name
+  if (upper.includes('BOWL')) return 'Fast Bowler';
+  return 'Batsmen';
+}
+
+type PlayerEntry = { name: string; price: number | null; overseas: boolean };
+
 export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
   const [expanded, setExpanded] = useState(false);
   const remaining = team.total_budget - team.spent_budget;
   const totalPlayers = soldPlayers.length;
-  const overseasSold = soldPlayers.filter(p => p.country !== 'India').length;
-  const overseasLeft = team.overseas_slots - overseasSold;
+  const overseasCount = soldPlayers.filter(p => p.country !== 'India').length;
+  const overseasLeft = team.overseas_slots - overseasCount;
   const slotsLeft = team.player_slots - totalPlayers;
 
-  const topBids = [...soldPlayers]
-    .filter(p => p.sold_price != null)
-    .sort((a, b) => (b.sold_price ?? 0) - (a.sold_price ?? 0))
-    .slice(0, 3);
+  const topBuys = useMemo(() =>
+    [...soldPlayers]
+      .filter(p => p.sold_price != null)
+      .sort((a, b) => (b.sold_price ?? 0) - (a.sold_price ?? 0))
+      .slice(0, 3),
+    [soldPlayers]
+  );
+
+  const roleGroups = useMemo(() => {
+    // Combine retained + sold into unified list
+    const all: (PlayerEntry & { role: string })[] = [
+      ...retained.map(p => ({
+        name: p.player_name,
+        price: p.retention_price,
+        overseas: p.nationality !== 'India' && p.nationality != null,
+        role: categorizeRole(p.role),
+      })),
+      ...soldPlayers.map(p => ({
+        name: p.player_name,
+        price: p.sold_price,
+        overseas: p.country !== 'India' && p.country != null,
+        role: categorizeRole(p.role),
+      })),
+    ];
+
+    return ROLE_CATEGORIES.map(cat => ({
+      label: cat.label,
+      players: all
+        .filter(p => p.role === cat.label)
+        .sort((a, b) => (b.price ?? 0) - (a.price ?? 0)),
+    })).filter(g => g.players.length > 0);
+  }, [retained, soldPlayers]);
 
   const hasSquad = retained.length > 0 || soldPlayers.length > 0;
 
@@ -98,59 +148,69 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
             <div className="px-3 pb-3 space-y-3">
               <div className="border-t border-border/40 pt-2" />
 
-              {/* Retained Players */}
-              {retained.length > 0 && (
-                <div>
-                  <div className="text-[10px] text-muted-foreground mb-1.5 font-semibold uppercase tracking-wider">
-                    Retained ({retained.length})
-                  </div>
-                  <div className="space-y-1">
-                    {retained.map(p => (
-                      <div key={p.id} className="text-xs flex items-center justify-between">
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          <span className="text-foreground font-medium">{p.player_name}</span>
-                          <span className="text-muted-foreground">· {p.role}</span>
-                          {p.nationality && p.nationality !== 'India' && (
-                            <span className="text-[10px] text-accent">✈️</span>
-                          )}
-                        </span>
-                        {p.retention_price != null && (
-                          <span className="text-primary font-bold whitespace-nowrap">₹{p.retention_price} Cr</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+              {/* Summary stats */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                <span className="text-muted-foreground">
+                  Slots Filled: <span className="text-foreground font-bold">{totalPlayers + retained.length}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Overseas: <span className="text-foreground font-bold">
+                    {overseasCount + retained.filter(r => r.nationality !== 'India' && r.nationality != null).length}
+                  </span>
+                </span>
+              </div>
+
+              {/* Top 3 Buys */}
+              {topBuys.length > 0 && (
+                <div className="text-[11px]">
+                  <span className="text-muted-foreground">Top Buys: </span>
+                  {topBuys.map((p, i) => (
+                    <span key={p.id}>
+                      {i > 0 && <span className="text-muted-foreground"> · </span>}
+                      <span className="text-foreground font-semibold">{p.player_name}</span>
+                      <span className="text-muted-foreground"> (₹{p.sold_price?.toFixed(1)})</span>
+                    </span>
+                  ))}
                 </div>
               )}
 
-              {/* Bought Players */}
-              {soldPlayers.length > 0 && (
-                <div>
-                  <div className="text-[10px] text-muted-foreground mb-1.5 font-semibold uppercase tracking-wider">
-                    Bought ({soldPlayers.length})
-                  </div>
-                  <div className="space-y-1">
-                    {[...soldPlayers]
-                      .sort((a, b) => (b.sold_price ?? 0) - (a.sold_price ?? 0))
-                      .map(p => (
-                        <div key={p.id} className="text-xs flex items-center justify-between">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: team.color }} />
-                            <span className="text-foreground font-medium">{p.player_name}</span>
-                            <span className="text-muted-foreground">· {p.role}</span>
-                            {p.country && p.country !== 'India' && (
-                              <span className="text-[10px] text-accent">✈️</span>
-                            )}
+              {/* Role-wise breakdown */}
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {roleGroups.map(group => (
+                  <div
+                    key={group.label}
+                    className="rounded-md border border-border/30 p-2"
+                    style={{ background: `${team.color}08` }}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {group.label}
+                      </span>
+                      <span
+                        className="text-[10px] font-bold rounded px-1.5 py-0.5"
+                        style={{ backgroundColor: `${team.color}30`, color: team.color }}
+                      >
+                        {group.players.length}
+                      </span>
+                    </div>
+                    <div className="space-y-0.5">
+                      {group.players.map((p, i) => (
+                        <div key={i} className="text-[11px] flex items-center justify-between">
+                          <span className="flex items-center gap-1 text-foreground truncate">
+                            {p.overseas && <span className="text-[9px]">✈️</span>}
+                            {p.name}
                           </span>
-                          <span className="font-bold whitespace-nowrap" style={{ color: team.color }}>
-                            ₹{p.sold_price?.toFixed(2)} Cr
-                          </span>
+                          {p.price != null && (
+                            <span className="font-bold whitespace-nowrap ml-1" style={{ color: team.color }}>
+                              ₹{p.price} Cr
+                            </span>
+                          )}
                         </div>
                       ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </motion.div>
         )}
