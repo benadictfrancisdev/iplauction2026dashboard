@@ -93,14 +93,15 @@ const Index = () => {
               <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
               <span className="text-[10px] text-muted-foreground">Purse, player slots & overseas slots</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
               {teams.map(team => (
-                <TeamCard
-                  key={team.id}
-                  team={team}
-                  retained={retainedByTeam(team.id)}
-                  soldPlayers={soldPlayersByTeam(team.id)}
-                />
+                <div key={team.id} className="break-inside-avoid">
+                  <TeamCard
+                    team={team}
+                    retained={retainedByTeam(team.id)}
+                    soldPlayers={soldPlayersByTeam(team.id)}
+                  />
+                </div>
               ))}
             </div>
           </div>
