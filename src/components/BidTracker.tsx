@@ -197,6 +197,9 @@ export function BidTracker({ currentPlayer, teams, onComplete }: Props) {
         <Button variant="outline" size="sm" className="w-full text-xs" onClick={resetBid}>
           ↺ Reset Bid to Base
         </Button>
+
+        {/* Auction Timer */}
+        <AuctionTimer />
       </div>
 
       {/* Confirm Sale */}
