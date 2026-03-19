@@ -95,11 +95,38 @@ const Index = () => {
               <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
               <span className="text-[10px] text-muted-foreground">Purse, player slots & overseas slots</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {teams.map(team => (
-                <TeamCard key={team.id} team={team} retained={retainedByTeam(team.id)} soldPlayers={soldPlayersByTeam(team.id)} />
-              ))}
-            </div>
+            {(() => {
+              const teamsByShort: Record<string, typeof teams[number]> = {};
+              teams.forEach(t => { teamsByShort[t.short_name] = t; });
+              const leftKeys = ['CSK', 'MI', 'RR'];
+              const midKeys = ['DC', 'GT', 'KKR', 'LSG'];
+              const rightKeys = ['PBKS', 'RCB', 'SRH'];
+              const renderCard = (t: typeof teams[number] | undefined) =>
+                t ? <TeamCard key={t.id} team={t} retained={retainedByTeam(t.id)} soldPlayers={soldPlayersByTeam(t.id)} /> : null;
+
+              return (
+                <div className="grid grid-cols-3 gap-4" style={{ gridTemplateRows: 'repeat(12, 1fr)' }}>
+                  {/* Left column — 3 cards spanning rows 1-12 evenly */}
+                  {leftKeys.map((k, i) => (
+                    <div key={k} className="col-start-1" style={{ gridRow: `${i * 4 + 1} / span 4` }}>
+                      {renderCard(teamsByShort[k])}
+                    </div>
+                  ))}
+                  {/* Middle column — 4 cards spanning rows 1-12 evenly */}
+                  {midKeys.map((k, i) => (
+                    <div key={k} className="col-start-2" style={{ gridRow: `${i * 3 + 1} / span 3` }}>
+                      {renderCard(teamsByShort[k])}
+                    </div>
+                  ))}
+                  {/* Right column — 3 cards, starting from row 4 (aligned with 2nd middle card) */}
+                  {rightKeys.map((k, i) => (
+                    <div key={k} className="col-start-3" style={{ gridRow: `${i * 3 + 4} / span 3` }}>
+                      {renderCard(teamsByShort[k])}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Auction Log + Top 10 Buys */}
