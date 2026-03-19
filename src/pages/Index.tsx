@@ -95,11 +95,32 @@ const Index = () => {
               <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
               <span className="text-[10px] text-muted-foreground">Purse, player slots & overseas slots</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {teams.map(team => (
-                <TeamCard key={team.id} team={team} retained={retainedByTeam(team.id)} soldPlayers={soldPlayersByTeam(team.id)} />
-              ))}
-            </div>
+            {(() => {
+              const teamsByShort: Record<string, typeof teams[number]> = {};
+              teams.forEach(t => { teamsByShort[t.short_name] = t; });
+              const leftKeys = ['CSK', 'MI', 'RR'];
+              const midKeys = ['DC', 'GT', 'KKR', 'LSG'];
+              const rightKeys = ['PBKS', 'RCB', 'SRH'];
+              const renderCard = (t: typeof teams[number] | undefined) =>
+                t ? <TeamCard key={t.id} team={t} retained={retainedByTeam(t.id)} soldPlayers={soldPlayersByTeam(t.id)} /> : null;
+
+              return (
+                <div className="grid grid-cols-3 gap-4 items-start">
+                  {/* Left column — 3 cards */}
+                  <div className="flex flex-col gap-4">
+                    {leftKeys.map(k => renderCard(teamsByShort[k]))}
+                  </div>
+                  {/* Middle column — 4 cards */}
+                  <div className="flex flex-col gap-4">
+                    {midKeys.map(k => renderCard(teamsByShort[k]))}
+                  </div>
+                  {/* Right column — 3 cards, offset down to align with 2nd middle card */}
+                  <div className="flex flex-col gap-4" style={{ marginTop: 'calc((100% - 3 * 0px) / 4 + 1rem)' }}>
+                    {rightKeys.map(k => renderCard(teamsByShort[k]))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Auction Log + Top 10 Buys */}
