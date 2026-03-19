@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { BidTracker } from '@/components/BidTracker';
 import { AddPlayerModal } from '@/components/AddPlayerModal';
+import { AcceleratedAuction } from '@/components/AcceleratedAuction';
+import { RandomTeamGenerator } from '@/components/RandomTeamGenerator';
 
 const PASSCODE = 'IPL2026';
 
@@ -58,7 +60,6 @@ function HostDashboard() {
     auctionLog,
     refetch,
     soldPlayersByTeam,
-    retainedByTeam,
   } = useAuctionData();
   const { toast } = useToast();
 
@@ -101,6 +102,7 @@ function HostDashboard() {
   const undoLastSale = async () => {
     if (auctionLog.length === 0) return;
     const last = auctionLog[0];
+
     if (last.action === 'unsold') {
       await supabase.from('auction_log').delete().eq('id', last.id);
       if (last.player_id) {
@@ -110,42 +112,39 @@ function HostDashboard() {
       refetch();
       return;
     }
-    if (last.action !== 'sold') {
-      await supabase.from('auction_log').delete().eq('id', last.id);
+
+    if (last.action === 'sold') {
       if (last.player_id) {
-        await supabase.from('auction_players').update({ status: 'available' }).eq('id', last.player_id);
+        await supabase.from('auction_players').update({
+          status: 'available',
+          sold_to_team: null,
+          sold_price: null,
+          current_bid: null,
+          leading_team_id: null,
+        } as any).eq('id', last.player_id);
       }
-      toast({ title: 'Undo successful' });
-      refetch();
-      return;
-    }
-
-    if (last.player_id) {
-      await supabase.from('auction_players').update({
-        status: 'available',
-        sold_to_team: null,
-        sold_price: null,
-      }).eq('id', last.player_id);
-    }
-
-    if (last.team_id && last.sold_price) {
-      const team = teams.find(t => t.id === last.team_id);
-      if (team) {
-        await supabase.from('teams').update({
-          spent_budget: Math.max(0, team.spent_budget - last.sold_price),
-        }).eq('id', last.team_id);
+      if (last.team_id && last.sold_price) {
+        const team = teams.find(t => t.id === last.team_id);
+        if (team) {
+          await supabase.from('teams').update({
+            spent_budget: Math.max(0, team.spent_budget - last.sold_price),
+          }).eq('id', last.team_id);
+        }
+      }
+    } else {
+      if (last.player_id) {
+        await supabase.from('auction_players').update({ status: 'available', current_bid: null, leading_team_id: null } as any).eq('id', last.player_id);
       }
     }
 
     await supabase.from('auction_log').delete().eq('id', last.id);
-    toast({ title: `Undid sale of ${last.player_name}` });
+    toast({ title: `Undid: ${last.player_name} (${last.action})` });
     refetch();
   };
 
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
 
   const restartAuction = async () => {
-    // Reset all players to available
     await supabase.from('auction_players').update({
       status: 'available',
       sold_to_team: null,
@@ -153,13 +152,8 @@ function HostDashboard() {
       current_bid: null,
       leading_team_id: null,
     } as any).neq('status', 'available');
-
-    // Reset all team budgets
     await supabase.from('teams').update({ spent_budget: 0 }).gt('spent_budget', 0);
-
-    // Clear auction log
     await supabase.from('auction_log').delete().gte('created_at', '2000-01-01');
-
     setShowRestartConfirm(false);
     toast({ title: 'Auction restarted! All data has been reset.' });
     refetch();
@@ -173,7 +167,7 @@ function HostDashboard() {
           <h1 className="font-display font-bold text-2xl text-foreground">Auctioneer Control Panel</h1>
           <p className="text-xs text-muted-foreground">Manage the live auction</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link to="/">
             <Button variant="outline" size="sm" className="text-xs">View Dashboard</Button>
           </Link>
@@ -195,19 +189,15 @@ function HostDashboard() {
               This will reset <strong>all players</strong> to available, clear <strong>all sales</strong>, reset <strong>all team budgets</strong>, and delete the <strong>auction log</strong>. This cannot be undone.
             </p>
             <div className="flex gap-2">
-              <Button variant="destructive" className="flex-1" onClick={restartAuction}>
-                Yes, Restart
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={() => setShowRestartConfirm(false)}>
-                Cancel
-              </Button>
+              <Button variant="destructive" className="flex-1" onClick={restartAuction}>Yes, Restart</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowRestartConfirm(false)}>Cancel</Button>
             </div>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left: Bid Tracker + Team Budgets */}
+        {/* Left: Bid Tracker + Accelerated Auction + Team Budgets */}
         <div className="lg:col-span-1 space-y-4">
           {currentPlayer ? (
             <BidTracker currentPlayer={currentPlayer} teams={teams} onComplete={refetch} />
@@ -216,6 +206,12 @@ function HostDashboard() {
               No player currently being auctioned. Select one from the player list.
             </div>
           )}
+
+          {/* Accelerated Auction */}
+          <AcceleratedAuction auctionPlayers={auctionPlayers} onComplete={refetch} />
+
+          {/* Random Team Generator */}
+          <RandomTeamGenerator teams={teams} />
 
           {/* Team Budget Monitor */}
           <div className="bg-card border border-border rounded-lg p-3">
@@ -260,22 +256,16 @@ function HostDashboard() {
                   className="flex-1 min-w-[150px] h-8 text-xs"
                 />
                 <Select value={filterSet} onValueChange={setFilterSet}>
-                  <SelectTrigger className="w-[160px] h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     <SelectItem value="all">All Sets</SelectItem>
                     {setNumbers.map(([num, { name, count }]) => (
-                      <SelectItem key={num} value={String(num)}>
-                        {name} ({count})
-                      </SelectItem>
+                      <SelectItem key={num} value={String(num)}>{name} ({count})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <Select value={filterRole} onValueChange={setFilterRole}>
-                  <SelectTrigger className="w-[130px] h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
                     <SelectItem value="BATTER">Batter</SelectItem>
@@ -285,9 +275,7 @@ function HostDashboard() {
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[120px] h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="available">Available</SelectItem>
@@ -329,7 +317,7 @@ function HostDashboard() {
                         </span>
                       </td>
                       <td className="p-2 text-center">
-                        {p.status === 'available' && (
+                        {(p.status === 'available' || p.status === 'unsold') && (
                           <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => setAsCurrent(p.id)}>
                             Set Current
                           </Button>
