@@ -105,19 +105,25 @@ const Index = () => {
                 t ? <TeamCard key={t.id} team={t} retained={retainedByTeam(t.id)} soldPlayers={soldPlayersByTeam(t.id)} /> : null;
 
               return (
-                <div className="grid grid-cols-3 gap-4 items-start">
-                  {/* Left column — 3 cards */}
-                  <div className="flex flex-col gap-4">
-                    {leftKeys.map(k => renderCard(teamsByShort[k]))}
-                  </div>
-                  {/* Middle column — 4 cards */}
-                  <div className="flex flex-col gap-4">
-                    {midKeys.map(k => renderCard(teamsByShort[k]))}
-                  </div>
-                  {/* Right column — 3 cards, offset down to align with 2nd middle card */}
-                  <div className="flex flex-col gap-4" style={{ marginTop: 'calc((100% - 3 * 0px) / 4 + 1rem)' }}>
-                    {rightKeys.map(k => renderCard(teamsByShort[k]))}
-                  </div>
+                <div className="grid grid-cols-3 gap-4" style={{ gridTemplateRows: 'repeat(12, 1fr)' }}>
+                  {/* Left column — 3 cards spanning rows 1-12 evenly */}
+                  {leftKeys.map((k, i) => (
+                    <div key={k} className="col-start-1" style={{ gridRow: `${i * 4 + 1} / span 4` }}>
+                      {renderCard(teamsByShort[k])}
+                    </div>
+                  ))}
+                  {/* Middle column — 4 cards spanning rows 1-12 evenly */}
+                  {midKeys.map((k, i) => (
+                    <div key={k} className="col-start-2" style={{ gridRow: `${i * 3 + 1} / span 3` }}>
+                      {renderCard(teamsByShort[k])}
+                    </div>
+                  ))}
+                  {/* Right column — 3 cards, starting from row 4 (aligned with 2nd middle card) */}
+                  {rightKeys.map((k, i) => (
+                    <div key={k} className="col-start-3" style={{ gridRow: `${i * 3 + 4} / span 3` }}>
+                      {renderCard(teamsByShort[k])}
+                    </div>
+                  ))}
                 </div>
               );
             })()}
