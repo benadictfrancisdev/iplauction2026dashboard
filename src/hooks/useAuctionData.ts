@@ -16,62 +16,56 @@ export function useAuctionData() {
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetchAll = useCallback(async () => {
-    const [teamsRes, playersRes, retainedRes, logRes] = await Promise.all([
-      supabase.from('teams').select('*').order('short_name'),
-      supabase.from('auction_players').select('*').order('set_number'),
-      supabase.from('retained_players').select('*'),
-      supabase.from('auction_log').select('*').order('created_at', { ascending: false }).limit(20),
-    ]);
+  const fetchTeams = useCallback(async () => {
+    const { data } = await supabase.from('teams').select('*').order('short_name');
+    if (data) setTeams(data);
+  }, []);
 
-    if (teamsRes.data) setTeams(teamsRes.data);
-    if (playersRes.data) {
-      setAuctionPlayers(playersRes.data);
-      const current = playersRes.data.find(p => p.status === 'current');
+  const fetchPlayers = useCallback(async () => {
+    const { data } = await supabase.from('auction_players').select('*').order('set_number');
+    if (data) {
+      setAuctionPlayers(data);
+      const current = data.find(p => p.status === 'current');
       setCurrentPlayer(current || null);
     }
-    if (retainedRes.data) setRetainedPlayers(retainedRes.data);
-    if (logRes.data) setAuctionLog(logRes.data);
-    setLoading(false);
   }, []);
+
+  const fetchLog = useCallback(async () => {
+    const { data } = await supabase.from('auction_log').select('*').order('created_at', { ascending: false }).limit(20);
+    if (data) setAuctionLog(data);
+  }, []);
+
+  const fetchRetained = useCallback(async () => {
+    const { data } = await supabase.from('retained_players').select('*');
+    if (data) setRetainedPlayers(data);
+  }, []);
+
+  const fetchAll = useCallback(async () => {
+    await Promise.all([fetchTeams(), fetchPlayers(), fetchRetained(), fetchLog()]);
+    setLoading(false);
+  }, [fetchTeams, fetchPlayers, fetchRetained, fetchLog]);
 
   useEffect(() => {
     fetchAll();
 
-    // Set up realtime subscriptions
+    // Set up realtime subscriptions - refetch immediately on change
     const channel = supabase
       .channel('auction-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => {
-        supabase.from('teams').select('*').order('short_name').then(({ data }) => {
-          if (data) setTeams(data);
-        });
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_players' }, () => {
-        supabase.from('auction_players').select('*').order('set_number').then(({ data }) => {
-          if (data) {
-            setAuctionPlayers(data);
-            const current = data.find(p => p.status === 'current');
-            setCurrentPlayer(current || null);
-          }
-        });
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_log' }, () => {
-        supabase.from('auction_log').select('*').order('created_at', { ascending: false }).limit(20).then(({ data }) => {
-          if (data) setAuctionLog(data);
-        });
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => fetchTeams())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_players' }, () => fetchPlayers())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_log' }, () => fetchLog())
       .subscribe((status) => {
         setIsLive(status === 'SUBSCRIBED');
       });
 
-    // Auto-refresh every 5 seconds as fallback
-    const interval = setInterval(fetchAll, 5000);
+    // Reduced fallback interval since realtime handles most updates
+    const interval = setInterval(fetchAll, 10000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [fetchAll]);
+  }, [fetchAll, fetchTeams, fetchPlayers, fetchLog]);
 
   const soldPlayersByTeam = useCallback((teamId: string) => {
     return auctionPlayers.filter(p => p.status === 'sold' && p.sold_to_team === teamId);

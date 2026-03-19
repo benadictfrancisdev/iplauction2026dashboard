@@ -1,6 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw } from 'lucide-react';
+
+export interface AuctionTimerHandle {
+  start: () => void;
+  reset: () => void;
+  stop: () => void;
+  isExpired: boolean;
+}
 
 interface Props {
   onTimerEnd?: () => void;
@@ -21,7 +28,6 @@ function playTickSound() {
 
 function playTimerEndSound() {
   const ctx = new AudioContext();
-  // Three rapid beeps
   [0, 0.15, 0.3].forEach(offset => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -35,7 +41,7 @@ function playTimerEndSound() {
   });
 }
 
-export function AuctionTimer({ onTimerEnd }: Props) {
+export const AuctionTimer = forwardRef<AuctionTimerHandle, Props>(({ onTimerEnd }, ref) => {
   const [seconds, setSeconds] = useState(10);
   const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -52,6 +58,18 @@ export function AuctionTimer({ onTimerEnd }: Props) {
     stop();
     setSeconds(10);
   }, [stop]);
+
+  const start = useCallback(() => {
+    setSeconds(10);
+    setRunning(true);
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    start,
+    reset,
+    stop,
+    get isExpired() { return seconds === 0; },
+  }), [start, reset, stop, seconds]);
 
   useEffect(() => {
     if (!running) return;
@@ -101,7 +119,6 @@ export function AuctionTimer({ onTimerEnd }: Props) {
       }`}>
         {isExpired ? 'TIME!' : `${seconds}s`}
       </div>
-      {/* Progress bar */}
       <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-1000 ${
@@ -112,4 +129,6 @@ export function AuctionTimer({ onTimerEnd }: Props) {
       </div>
     </div>
   );
-}
+});
+
+AuctionTimer.displayName = 'AuctionTimer';

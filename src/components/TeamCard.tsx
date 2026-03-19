@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import type { Database } from '@/integrations/supabase/types';
-import { ChevronDown } from 'lucide-react';
 
 type Team = Database['public']['Tables']['teams']['Row'];
 type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
@@ -13,28 +12,6 @@ interface TeamCardProps {
   retained: RetainedPlayer[];
   soldPlayers: AuctionPlayer[];
 }
-
-const ROLE_CATEGORIES = [
-  { label: 'Batsmen', keys: ['BATTER', 'BATSMAN', 'BATSMEN', 'BAT'] },
-  { label: 'WK', keys: ['WICKETKEEPER', 'WK', 'WICKET-KEEPER', 'WK-BATTER'] },
-  { label: 'Allrounder', keys: ['ALL-ROUNDER', 'ALLROUNDER', 'ALL ROUNDER', 'AR'] },
-  { label: 'Fast Bowler', keys: ['FAST BOWLER', 'PACER', 'PACE', 'SEAMER', 'FAST'] },
-  { label: 'Spinner', keys: ['SPINNER', 'SPIN', 'SPIN BOWLER'] },
-];
-
-function categorizeRole(role: string | null): string {
-  if (!role) return 'Batsmen';
-  const upper = role.toUpperCase().trim();
-  // Check if role contains "BOWL" but not "ALL" for generic bowlers
-  for (const cat of ROLE_CATEGORIES) {
-    if (cat.keys.some(k => upper.includes(k) || upper === k)) return cat.label;
-  }
-  // Fallback: if contains BOWL, guess based on name
-  if (upper.includes('BOWL')) return 'Fast Bowler';
-  return 'Batsmen';
-}
-
-type PlayerEntry = { name: string; price: number | null; overseas: boolean };
 
 export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
   const navigate = useNavigate();
@@ -48,7 +25,7 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-lg overflow-hidden border border-border/50 cursor-pointer select-none hover:border-border transition-colors"
+      className="rounded-lg overflow-hidden border border-border/50 cursor-pointer select-none hover:border-border transition-colors h-full"
       style={{
         background: `linear-gradient(135deg, ${team.color}22 0%, hsl(var(--card)) 100%)`,
         borderLeft: `3px solid ${team.color}`,
@@ -80,7 +57,7 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
           <span className="font-display font-bold text-2xl" style={{ color: team.color }}>
             ₹{remaining.toFixed(2)} Cr
           </span>
-          <span className="text-xs text-muted-foreground ml-1">purse left</span>
+          <span className="text-xs text-foreground/60 ml-1">purse left</span>
         </div>
 
         {/* Stats row */}

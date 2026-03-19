@@ -3,17 +3,13 @@ import { useAuctionData } from '@/hooks/useAuctionData';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useMemo } from 'react';
-import type { Database } from '@/integrations/supabase/types';
-
-type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
-type RetainedPlayer = Database['public']['Tables']['retained_players']['Row'];
 
 const ROLE_CATEGORIES = [
   { label: 'Batsmen', keys: ['BATTER', 'BATSMAN', 'BATSMEN', 'BAT'] },
   { label: 'WK', keys: ['WICKETKEEPER', 'WK', 'WICKET-KEEPER', 'WK-BATTER'] },
   { label: 'Allrounder', keys: ['ALL-ROUNDER', 'ALLROUNDER', 'ALL ROUNDER', 'AR'] },
-  { label: 'Fast Bowler', keys: ['FAST BOWLER', 'PACER', 'PACE', 'SEAMER', 'FAST', 'BOWLER'] },
-  { label: 'Spinner', keys: ['SPINNER', 'SPIN', 'SPIN BOWLER'] },
+  { label: 'Fast Bowler', keys: ['FAST BOWLER', 'PACER', 'PACE', 'SEAMER', 'FAST'] },
+  { label: 'Spin Bowler', keys: ['SPINNER', 'SPIN', 'SPIN BOWLER'] },
 ];
 
 function categorizeRole(role: string | null): string {
@@ -28,7 +24,7 @@ function categorizeRole(role: string | null): string {
 
 export default function TeamDetail() {
   const { teamId } = useParams<{ teamId: string }>();
-  const { teams, auctionPlayers, retainedPlayers, soldPlayersByTeam, retainedByTeam, loading } = useAuctionData();
+  const { teams, retainedPlayers, soldPlayersByTeam, retainedByTeam, loading } = useAuctionData();
 
   const team = teams.find(t => t.id === teamId);
   const retained = teamId ? retainedByTeam(teamId) : [];
@@ -90,7 +86,6 @@ export default function TeamDetail() {
 
   return (
     <div className="min-h-screen p-4 max-w-[1200px] mx-auto">
-      {/* Back button */}
       <Link to="/">
         <Button variant="ghost" size="sm" className="mb-4 gap-1.5 text-xs">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
@@ -120,7 +115,6 @@ export default function TeamDetail() {
           </div>
         </div>
 
-        {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-background/50 rounded-lg p-3 text-center">
             <div className="text-xs text-muted-foreground">Purse Left</div>
@@ -181,7 +175,7 @@ export default function TeamDetail() {
             style={{ background: `${team.color}08` }}
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+              <span className="text-sm font-bold uppercase tracking-wider" style={{ color: team.color }}>
                 {group.label}
               </span>
               <span
