@@ -90,6 +90,13 @@ function HostDashboard() {
     }).slice(0, 100);
   }, [auctionPlayers, search, filterRole, filterStatus, filterSet]);
 
+  // Get unique roles from the dataset
+  const uniqueRoles = useMemo(() => {
+    const roles = new Set<string>();
+    auctionPlayers.forEach(p => { if (p.role) roles.add(p.role); });
+    return Array.from(roles).sort();
+  }, [auctionPlayers]);
+
   const setAsCurrent = async (playerId: string) => {
     await supabase.from('auction_players').update({ status: 'available', current_bid: null, leading_team_id: null } as any).eq('status', 'current');
     const player = auctionPlayers.find(p => p.id === playerId);
@@ -268,10 +275,9 @@ function HostDashboard() {
                   <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="BATTER">Batter</SelectItem>
-                    <SelectItem value="BOWLER">Bowler</SelectItem>
-                    <SelectItem value="ALL-ROUNDER">All-Rounder</SelectItem>
-                    <SelectItem value="WICKETKEEPER">Wicketkeeper</SelectItem>
+                    {uniqueRoles.map(role => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>

@@ -5,19 +5,6 @@ import type { Database } from '@/integrations/supabase/types';
 
 type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
 
-const MARQUEE_PLAYERS = [
-  'Jasprit Bumrah', 'Suryakumar Yadav', 'Hardik Pandya', 'Rohit Sharma', 'Tilak Varma',
-  'Ruturaj Gaikwad', 'Matheesha Pathirana', 'Shivam Dube', 'Ravindra Jadeja', 'MS Dhoni',
-  'Rashid Khan', 'Shubman Gill', 'Sai Sudarshan', 'Rahul Tewatia', 'Shahrukh Khan',
-  'Nicholas Pooran', 'Ravi Bishnoi', 'Mayank Yadav', 'Mohsin Khan', 'Ayush Badoni',
-  'Pat Cummins', 'Nitish Kumar Reddy', 'Heinrich Klaasen', 'Travis Head', 'Abhishek Sharma',
-  'Sunil Narine', 'Rinku Singh', 'Varun Chakaravarthy', 'Harshit Rana', 'Ramandeep Singh',
-  'Virat Kohli', 'Rajat Patidar', 'Yash Dayal',
-  'Axar Patel', 'Kuldeep Yadav', 'Tristan Stubbs', 'Abhishek Porel',
-  'Sanju Samson', 'Yashasvi Jaiswal', 'Riyan Parag', 'Dhruv Jurel', 'Shimron Hetmyer', 'Sandeep Sharma',
-  'Prabhsimran Singh', 'Shashank Singh',
-];
-
 interface Props {
   auctionPlayers: AuctionPlayer[];
   onSetCurrent: (playerId: string) => void;
@@ -26,9 +13,10 @@ interface Props {
 export function MarqueePlayersPanel({ auctionPlayers, onSetCurrent }: Props) {
   const [open, setOpen] = useState(true);
 
-  const marqueeMatches = MARQUEE_PLAYERS.map(name => {
-    return auctionPlayers.find(p => p.player_name.toLowerCase() === name.toLowerCase());
-  }).filter(Boolean) as AuctionPlayer[];
+  // Filter marquee players by set_name containing "Marquee"
+  const marqueeMatches = auctionPlayers.filter(p => 
+    p.set_name?.toLowerCase().includes('marquee')
+  );
 
   const available = marqueeMatches.filter(p => p.status === 'available');
   const sold = marqueeMatches.filter(p => p.status === 'sold');

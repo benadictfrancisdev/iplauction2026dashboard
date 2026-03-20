@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
@@ -10,7 +12,79 @@ interface Props {
   fullscreen?: boolean;
 }
 
+function playTickSound() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.1);
+  } catch {}
+}
+
+function playTimerEndSound() {
+  try {
+    const ctx = new AudioContext();
+    [0, 0.15, 0.3].forEach(offset => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1000, ctx.currentTime + offset);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + offset + 0.12);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.12);
+    });
+  } catch {}
+}
+
 export function CurrentPlayerSpotlight({ player, teams, fullscreen }: Props) {
+  const [timerSeconds, setTimerSeconds] = useState(10);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [lastBid, setLastBid] = useState<number | null>(null);
+
+  const currentBid = (player as any)?.current_bid as number | null;
+
+  // Auto-start timer when bid changes (realtime sync)
+  useEffect(() => {
+    if (!player || !currentBid) return;
+    if (lastBid !== null && currentBid !== lastBid) {
+      setTimerSeconds(10);
+      setTimerRunning(true);
+    }
+    setLastBid(currentBid);
+  }, [currentBid, player]);
+
+  // Reset timer when player changes
+  useEffect(() => {
+    setTimerSeconds(10);
+    setTimerRunning(false);
+    setLastBid(null);
+  }, [player?.id]);
+
+  // Countdown logic
+  useEffect(() => {
+    if (!timerRunning) return;
+    const interval = setInterval(() => {
+      setTimerSeconds(prev => {
+        if (prev <= 1) {
+          setTimerRunning(false);
+          playTimerEndSound();
+          return 0;
+        }
+        if (prev <= 4) playTickSound();
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timerRunning]);
+
   if (!player) return null;
 
   const imageUrl = (player as any).image_url as string | null;
@@ -19,13 +93,15 @@ export function CurrentPlayerSpotlight({ player, teams, fullscreen }: Props) {
     ? `₹${(player.base_price / 100).toFixed(2)} Cr`
     : `₹${player.base_price} L`;
 
-  const currentBid = (player as any).current_bid as number | null;
   const leadingTeamId = (player as any).leading_team_id as string | null;
   const leadingTeam = teams?.find(t => t.id === leadingTeamId);
 
   const currentBidDisplay = currentBid
     ? `₹${currentBid.toFixed(2)} Cr`
     : basePriceInCr;
+
+  const isUrgent = timerSeconds <= 3 && timerSeconds > 0;
+  const isExpired = timerSeconds === 0;
 
   return (
     <motion.div
@@ -49,9 +125,29 @@ export function CurrentPlayerSpotlight({ player, teams, fullscreen }: Props) {
               Live — Now Auctioning
             </span>
           </div>
-          <span className={`text-muted-foreground ${fullscreen ? 'text-base' : 'text-sm'}`}>
-            Set {player.set_name || player.set_number}
-          </span>
+          <div className="flex items-center gap-4">
+            <span className={`text-muted-foreground ${fullscreen ? 'text-base' : 'text-sm'}`}>
+              Set {player.set_name || player.set_number}
+            </span>
+            {/* Timer Display */}
+            <div className={`font-display font-bold rounded-lg px-4 py-2 ${
+              isExpired ? 'bg-destructive/20 text-destructive' :
+              isUrgent ? 'bg-live/20 text-live live-pulse' :
+              'bg-muted/50 text-foreground'
+            } ${fullscreen ? 'text-3xl' : 'text-xl'}`}>
+              {isExpired ? '⏰ TIME!' : `${timerSeconds}s`}
+            </div>
+          </div>
+        </div>
+
+        {/* Timer progress bar */}
+        <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-1000 ${
+              isUrgent ? 'bg-live' : isExpired ? 'bg-destructive' : 'bg-primary'
+            }`}
+            style={{ width: `${(timerSeconds / 10) * 100}%` }}
+          />
         </div>
 
         {/* Main content */}
