@@ -7,6 +7,25 @@ type Team = Database['public']['Tables']['teams']['Row'];
 type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
 type RetainedPlayer = Database['public']['Tables']['retained_players']['Row'];
 
+// Brighten dark colors for better visibility in dark mode
+function ensureReadableColor(hex: string): string {
+  // Convert hex to RGB
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  // If too dark, lighten it
+  if (luminance < 0.35) {
+    const factor = 1.6;
+    const nr = Math.min(255, Math.round(r * factor + 40));
+    const ng = Math.min(255, Math.round(g * factor + 40));
+    const nb = Math.min(255, Math.round(b * factor + 40));
+    return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
+  }
+  return hex;
+}
+
 interface TeamCardProps {
   team: Team;
   retained: RetainedPlayer[];
@@ -20,6 +39,10 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
   const overseasCount = soldPlayers.filter(p => p.country !== 'India').length;
   const overseasLeft = team.overseas_slots - overseasCount;
   const slotsLeft = team.player_slots - totalPlayers;
+
+  // Use brightened color for text in dark mode
+  const isDark = document.documentElement.classList.contains('dark') || !document.documentElement.classList.contains('light');
+  const textColor = isDark ? ensureReadableColor(team.color) : team.color;
 
   return (
     <motion.div
@@ -54,7 +77,7 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
 
         {/* Budget */}
         <div className="mb-3">
-          <span className="font-display font-bold text-2xl" style={{ color: team.color }}>
+          <span className="font-display font-bold text-2xl" style={{ color: textColor }}>
             ₹{remaining.toFixed(2)} Cr
           </span>
           <span className="text-xs text-foreground/60 ml-1">purse left</span>
