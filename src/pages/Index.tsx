@@ -89,7 +89,7 @@ const Index = () => {
         />
       ) : (
         <>
-          {/* Team Overview Grid - 3-4-3 staggered layout */}
+          {/* Team Overview Grid — 3-4-3 layout matching image */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
@@ -98,31 +98,25 @@ const Index = () => {
             {(() => {
               const teamsByShort: Record<string, typeof teams[number]> = {};
               teams.forEach(t => { teamsByShort[t.short_name] = t; });
-              const leftKeys = ['CSK', 'MI', 'RR'];
-              const midKeys = ['DC', 'GT', 'KKR', 'LSG'];
+              const leftKeys  = ['CSK', 'MI', 'RR'];
+              const midKeys   = ['DC', 'GT', 'KKR', 'LSG'];
               const rightKeys = ['PBKS', 'RCB', 'SRH'];
               const renderCard = (t: typeof teams[number] | undefined) =>
                 t ? <TeamCard key={t.id} team={t} retained={retainedByTeam(t.id)} soldPlayers={soldPlayersByTeam(t.id)} /> : null;
 
               return (
-                <div className="grid grid-cols-3 gap-4">
-                  {/* Left column — 3 cards */}
-                  <div className="flex flex-col gap-4">
-                    {leftKeys.map(k => (
-                      <div key={k}>{renderCard(teamsByShort[k])}</div>
-                    ))}
+                <div className="grid grid-cols-[1fr_1fr_1fr] gap-4 items-start">
+                  {/* Left column — 3 cards, offset down by ~1 card height */}
+                  <div className="flex flex-col gap-4 mt-[22%]">
+                    {leftKeys.map(k => renderCard(teamsByShort[k]))}
                   </div>
-                  {/* Middle column — 4 cards */}
+                  {/* Middle column — 4 cards, starts at top */}
                   <div className="flex flex-col gap-3">
-                    {midKeys.map(k => (
-                      <div key={k}>{renderCard(teamsByShort[k])}</div>
-                    ))}
+                    {midKeys.map(k => renderCard(teamsByShort[k]))}
                   </div>
-                  {/* Right column — 3 cards, offset to start lower */}
-                  <div className="flex flex-col gap-4 pt-[calc(25%+0.375rem)]">
-                    {rightKeys.map(k => (
-                      <div key={k}>{renderCard(teamsByShort[k])}</div>
-                    ))}
+                  {/* Right column — 3 cards, offset down by ~1 card height */}
+                  <div className="flex flex-col gap-4 mt-[22%]">
+                    {rightKeys.map(k => renderCard(teamsByShort[k]))}
                   </div>
                 </div>
               );
