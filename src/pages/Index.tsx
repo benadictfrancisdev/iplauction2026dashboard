@@ -128,7 +128,7 @@ const Index = () => {
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr 1fr',
                     gridTemplateRows: 'repeat(4, 1fr)',
-                    minHeight: '480px',
+                    minHeight: "520px",
                   }}
                 >
                   {/* Left col — rows 2, 3, 4 (col 1) */}
