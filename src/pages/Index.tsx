@@ -89,35 +89,56 @@ const Index = () => {
         />
       ) : (
         <>
-          {/* Team Overview Grid — 3-4-3 layout matching image */}
+          {/* Team Overview Grid — 3 | 4 | 3 layout, left/right aligned with centre rows 2-4 */}
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="font-display font-bold text-sm text-foreground">Team Overview</h2>
-              <span className="text-[10px] text-muted-foreground">Purse, player slots & overseas slots</span>
+              <span className="text-[10px] text-muted-foreground">Click a team to view full squad</span>
             </div>
             {(() => {
-              const teamsByShort: Record<string, typeof teams[number]> = {};
-              teams.forEach(t => { teamsByShort[t.short_name] = t; });
+              const byShort: Record<string, typeof teams[number]> = {};
+              teams.forEach(t => { byShort[t.short_name] = t; });
+
               const leftKeys  = ['CSK', 'MI', 'RR'];
               const midKeys   = ['DC', 'GT', 'KKR', 'LSG'];
               const rightKeys = ['PBKS', 'RCB', 'SRH'];
-              const renderCard = (t: typeof teams[number] | undefined) =>
-                t ? <TeamCard key={t.id} team={t} retained={retainedByTeam(t.id)} soldPlayers={soldPlayersByTeam(t.id)} /> : null;
+
+              const card = (key: string, col: number, row: number) => {
+                const t = byShort[key];
+                if (!t) return null;
+                return (
+                  <div
+                    key={key}
+                    style={{ gridColumn: col, gridRow: row }}
+                    className="min-h-0"
+                  >
+                    <TeamCard
+                      team={t}
+                      retained={retainedByTeam(t.id)}
+                      soldPlayers={soldPlayersByTeam(t.id)}
+                    />
+                  </div>
+                );
+              };
 
               return (
-                <div className="grid grid-cols-[1fr_1fr_1fr] gap-4 items-start">
-                  {/* Left column — 3 cards, offset down by ~1 card height */}
-                  <div className="flex flex-col gap-4 mt-[22%]">
-                    {leftKeys.map(k => renderCard(teamsByShort[k]))}
-                  </div>
-                  {/* Middle column — 4 cards, starts at top */}
-                  <div className="flex flex-col gap-3">
-                    {midKeys.map(k => renderCard(teamsByShort[k]))}
-                  </div>
-                  {/* Right column — 3 cards, offset down by ~1 card height */}
-                  <div className="flex flex-col gap-4 mt-[22%]">
-                    {rightKeys.map(k => renderCard(teamsByShort[k]))}
-                  </div>
+                <div
+                  className="gap-4"
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gridTemplateRows: 'repeat(4, 1fr)',
+                    minHeight: '480px',
+                  }}
+                >
+                  {/* Left col — rows 2, 3, 4 (col 1) */}
+                  {leftKeys.map((k, i) => card(k, 1, i + 2))}
+
+                  {/* Centre col — rows 1, 2, 3, 4 (col 2) */}
+                  {midKeys.map((k, i) => card(k, 2, i + 1))}
+
+                  {/* Right col — rows 2, 3, 4 (col 3) */}
+                  {rightKeys.map((k, i) => card(k, 3, i + 2))}
                 </div>
               );
             })()}
