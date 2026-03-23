@@ -41,30 +41,52 @@ export function RandomTeamGenerator({ teams, onSaved }: Props) {
     setSaving(true);
     setError(null);
 
+    const rows = assignments.map(a => ({
+      team_id: a.team.id,
+      player_name: a.name,
+      role: 'OWNER' as const,
+      nationality: 'India',
+      retention_price: 0,
+    }));
+
     try {
-      // Call edge function which uses SERVICE ROLE — bypasses RLS entirely
+      // Step 1: delete old OWNER rows
+      await supabase.from('retained_players').delete().eq('role', 'OWNER');
+
+      // Step 2: try direct insert (works if RLS policies are applied)
+      const { error: directErr } = await supabase.from('retained_players').insert(rows);
+
+      if (!directErr) {
+        // Direct insert worked
+        setSaved(true);
+        toast({ title: '✅ Teams assigned!', description: `${rows.length} names now visible on team cards.` });
+        onSaved?.();
+        return;
+      }
+
+      // Step 3: direct insert failed — try edge function (uses service role)
+      console.warn('Direct insert failed, trying edge function:', directErr.message);
       const { data, error: fnErr } = await supabase.functions.invoke('save-team-assignments', {
-        body: {
-          assignments: assignments.map(a => ({
-            team_id: a.team.id,
-            player_name: a.name,
-          })),
-        },
+        body: { assignments: rows.map(r => ({ team_id: r.team_id, player_name: r.player_name })) },
       });
 
-      if (fnErr) throw new Error(fnErr.message);
-      if (!data?.success) throw new Error(data?.error || 'Save failed');
+      if (fnErr || !data?.success) {
+        throw new Error(
+          fnErr?.message || data?.error ||
+          'Could not save. Go to Supabase Dashboard → SQL Editor and run:\n' +
+          'CREATE POLICY "allow insert retained" ON public.retained_players FOR INSERT WITH CHECK (true);\n' +
+          'CREATE POLICY "allow delete retained" ON public.retained_players FOR DELETE USING (true);'
+        );
+      }
 
       setSaved(true);
-      toast({
-        title: '✅ Teams assigned!',
-        description: `${assignments.length} names now visible on every team card.`,
-      });
+      toast({ title: '✅ Teams assigned!', description: `${rows.length} names now visible on team cards.` });
       onSaved?.();
+
     } catch (e: any) {
       const msg = e.message || 'Unknown error';
       setError(msg);
-      toast({ title: 'Failed to save', description: msg, variant: 'destructive' });
+      toast({ title: 'Failed to save assignments', description: 'See error below', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -93,11 +115,9 @@ export function RandomTeamGenerator({ teams, onSaved }: Props) {
       </div>
 
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">
-          Participant names (comma-separated)
-        </label>
+        <label className="text-xs text-muted-foreground mb-1 block">Participant names (comma-separated)</label>
         <Input
-          placeholder="Ramu, Somu, Ravi, Vikram..."
+          placeholder="Ramu, Somu, Ravi, Vikram, Anbu..."
           value={namesInput}
           onChange={e => { setNamesInput(e.target.value); setSaved(false); }}
           className="h-8 text-xs"
@@ -112,10 +132,10 @@ export function RandomTeamGenerator({ teams, onSaved }: Props) {
       {assignments.length > 0 && (
         <>
           <div className="space-y-1">
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Assignments ({assignments.length})
             </div>
-            <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+            <div className="max-h-52 overflow-y-auto space-y-1 pr-1 scrollbar-thin">
               {assignments.map((a, i) => (
                 <div key={i} className="flex items-center justify-between text-sm py-1.5 px-2.5 rounded-lg bg-muted/40 border border-border/40">
                   <span className="font-medium text-foreground">{a.name}</span>
@@ -133,7 +153,7 @@ export function RandomTeamGenerator({ teams, onSaved }: Props) {
           {error && (
             <div className="flex items-start gap-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive">
               <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-              <span>{error}</span>
+              <pre className="whitespace-pre-wrap break-words font-sans">{error}</pre>
             </div>
           )}
 
@@ -146,7 +166,7 @@ export function RandomTeamGenerator({ teams, onSaved }: Props) {
             </Button>
           ) : (
             <div className="flex items-center gap-2 text-xs text-emerald-500 font-semibold justify-center py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <CheckCircle2 className="w-4 h-4" /> Saved! Visible on all team cards now.
+              <CheckCircle2 className="w-4 h-4" /> Saved! Names visible on all team cards.
             </div>
           )}
 
