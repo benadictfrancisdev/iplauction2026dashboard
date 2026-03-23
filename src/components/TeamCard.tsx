@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { User } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type Team = Database['public']['Tables']['teams']['Row'];
@@ -9,13 +10,10 @@ type RetainedPlayer = Database['public']['Tables']['retained_players']['Row'];
 
 // Brighten dark colors for better visibility in dark mode
 function ensureReadableColor(hex: string): string {
-  // Convert hex to RGB
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  // Calculate luminance
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  // If too dark, lighten it
   if (luminance < 0.35) {
     const factor = 1.6;
     const nr = Math.min(255, Math.round(r * factor + 40));
@@ -40,7 +38,12 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
   const overseasLeft = team.overseas_slots - overseasCount;
   const slotsLeft = team.player_slots - totalPlayers;
 
-  // Use brightened color for text in dark mode
+  // Owners assigned via Random Team Generator (role === 'OWNER')
+  const owners = useMemo(
+    () => retained.filter(r => r.role === 'OWNER'),
+    [retained]
+  );
+
   const isDark = document.documentElement.classList.contains('dark') || !document.documentElement.classList.contains('light');
   const textColor = isDark ? ensureReadableColor(team.color) : team.color;
 
@@ -74,6 +77,22 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
           </div>
           <span className="font-display font-bold text-sm text-foreground">{totalPlayers}/{team.player_slots}</span>
         </div>
+
+        {/* Owner names — shown when Random Team Generator has assigned people */}
+        {owners.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-1">
+            {owners.map((o, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: `${team.color}25`, color: textColor, border: `1px solid ${team.color}40` }}
+              >
+                <User className="w-2.5 h-2.5 shrink-0" />
+                {o.player_name}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Budget */}
         <div className="mb-3">
