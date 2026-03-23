@@ -8,8 +8,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { BidTracker } from '@/components/BidTracker';
 import { AddPlayerModal } from '@/components/AddPlayerModal';
+import { EditPlayerModal } from '@/components/EditPlayerModal';
 import { AcceleratedAuction } from '@/components/AcceleratedAuction';
 import { RandomTeamGenerator } from '@/components/RandomTeamGenerator';
+import { Pencil, Trash2 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
 
 const PASSCODE = 'IPL2026';
 
