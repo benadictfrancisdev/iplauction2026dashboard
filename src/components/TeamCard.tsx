@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { User } from 'lucide-react';
@@ -38,11 +37,9 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
   const overseasLeft = team.overseas_slots - overseasCount;
   const slotsLeft = team.player_slots - totalPlayers;
 
-  // Owners assigned via Random Team Generator (role === 'OWNER')
-  const owners = useMemo(
-    () => retained.filter(r => r.role === 'OWNER'),
-    [retained]
-  );
+  // Owners assigned via Random Team Generator — stored directly on team row
+  const ownerName = (team as any).owner_name as string | null;
+  const owners = ownerName ? ownerName.split(', ').filter(Boolean) : [];
 
   const isDark = document.documentElement.classList.contains('dark') || !document.documentElement.classList.contains('light');
   const textColor = isDark ? ensureReadableColor(team.color) : team.color;
@@ -78,17 +75,17 @@ export function TeamCard({ team, retained, soldPlayers }: TeamCardProps) {
           <span className="font-display font-bold text-sm text-foreground">{totalPlayers}/{team.player_slots}</span>
         </div>
 
-        {/* Owner names — shown when Random Team Generator has assigned people */}
+        {/* Owner names from Random Team Generator */}
         {owners.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1">
-            {owners.map((o, i) => (
+            {owners.map((name, i) => (
               <span
                 key={i}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
                 style={{ backgroundColor: `${team.color}25`, color: textColor, border: `1px solid ${team.color}40` }}
               >
                 <User className="w-2.5 h-2.5 shrink-0" />
-                {o.player_name}
+                {name}
               </span>
             ))}
           </div>

@@ -179,6 +179,7 @@ export type Database = {
           logo_url: string | null
           name: string
           overseas_slots: number
+          owner_name: string | null
           player_slots: number
           short_name: string
           spent_budget: number
@@ -203,6 +204,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           overseas_slots?: number
+          owner_name?: string | null
           player_slots?: number
           short_name?: string
           spent_budget?: number
