@@ -14,7 +14,7 @@ export function TopBuys({ players, teams }: Props) {
     return players
       .filter(p => p.status === 'sold' && p.sold_price != null)
       .sort((a, b) => (b.sold_price ?? 0) - (a.sold_price ?? 0))
-      .slice(0, 10);
+      .slice(0, 3);
   }, [players]);
 
   return (
