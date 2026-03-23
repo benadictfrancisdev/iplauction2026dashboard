@@ -72,6 +72,8 @@ function HostDashboard() {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSet, setFilterSet] = useState('all');
+  const [editPlayer, setEditPlayer] = useState<AuctionPlayer | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<AuctionPlayer | null>(null);
 
   const setNumbers = useMemo(() => {
     const sets = new Map<number, { name: string; count: number }>();
