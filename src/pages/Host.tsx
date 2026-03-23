@@ -309,6 +309,8 @@ function HostDashboard() {
                     <th className="text-right p-2">Base</th>
                     <th className="text-center p-2">Status</th>
                     <th className="text-center p-2">Action</th>
+                    <th className="text-center p-2">Update</th>
+                    <th className="text-center p-2">Delete</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -335,6 +337,16 @@ function HostDashboard() {
                             Set Current
                           </Button>
                         )}
+                      </td>
+                      <td className="p-2 text-center">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setEditPlayer(p)}>
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </td>
+                      <td className="p-2 text-center">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm(p)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
