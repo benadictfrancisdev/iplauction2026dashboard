@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuctionData } from '@/hooks/useAuctionData';
 import { TeamCard } from '@/components/TeamCard';
 import { AuctionLogFeed } from '@/components/AuctionLogFeed';
@@ -6,6 +6,7 @@ import { AuctionSummary } from '@/components/AuctionSummary';
 import { TopBuys } from '@/components/TopBuys';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Link, useNavigate } from 'react-router-dom';
+import { getBroadcastChannel } from '@/lib/auctionBroadcast';
 import { Button } from '@/components/ui/button';
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
@@ -18,6 +19,16 @@ const Index = () => {
 
   const navigate = useNavigate();
   const [showSummary, setShowSummary] = useState(false);
+
+  // Navigate to /live instantly when host sets a player — driven by broadcast (< 30ms)
+  useEffect(() => {
+    const ch = getBroadcastChannel();
+    const handler = ({ payload }: { payload: any }) => {
+      if (payload.type === 'SET_PLAYER') navigate('/live');
+    };
+    ch.on('broadcast', { event: 'bid' }, handler);
+    return () => { ch.off('broadcast', handler as any); };
+  }, [navigate]);
   const [refreshing, setRefreshing]   = useState(false);
 
   const byShort = useMemo(() => {
