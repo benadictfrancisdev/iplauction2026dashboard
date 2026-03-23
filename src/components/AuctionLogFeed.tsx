@@ -18,7 +18,7 @@ export function AuctionLogFeed({ log }: Props) {
           {log.length === 0 && (
             <div className="text-xs text-muted-foreground text-center py-4">No sales yet</div>
           )}
-          {log.map((entry) => (
+          {log.slice(0, 5).map((entry) => (
             <motion.div
               key={entry.id}
               initial={{ opacity: 0, x: -20 }}

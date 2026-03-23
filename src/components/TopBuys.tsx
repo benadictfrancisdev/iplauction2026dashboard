@@ -20,7 +20,7 @@ export function TopBuys({ players, teams }: Props) {
   return (
     <div className="rounded-lg border border-border bg-card">
       <div className="p-3 border-b border-border">
-        <h3 className="font-display font-bold text-sm text-foreground">🔥 Top 10 Buys</h3>
+        <h3 className="font-display font-bold text-sm text-foreground">🔥 Top 3 Buys</h3>
       </div>
       <div className="p-2 max-h-48 overflow-y-auto scrollbar-thin space-y-1">
         {topBuys.length === 0 && (
