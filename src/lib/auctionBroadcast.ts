@@ -1,15 +1,16 @@
 /**
- * Supabase Broadcast channel — pure WebSocket, bypasses DB WAL pipeline.
- * Latency: ~10-30ms vs ~150-500ms for postgres_changes.
+ * Supabase Broadcast — pure WebSocket, ~10-30ms latency.
+ * Bypasses DB WAL pipeline (postgres_changes = ~150-500ms).
  *
- * Architecture:
- *   Host bids → broadcast event + DB write (parallel)
- *   Viewers receive broadcast → update UI instantly
- *   postgres_changes fires ~200ms later → confirms / corrects any drift
+ * Flow:
+ *   Host bids → emitBid() sends WebSocket broadcast immediately
+ *   All viewers receive broadcast → update UI (<30ms)
+ *   DB write happens in parallel for persistence
+ *   postgres_changes fires ~200ms later as confirmation
  */
 import { supabase } from '@/integrations/supabase/client';
 
-export const BROADCAST_CHANNEL = 'auction-fast';
+export const BROADCAST_CHANNEL = 'ipl-auction-2026';
 
 export type BroadcastEvent =
   | { type: 'BID';        playerId: string; newBid: number; teamId: string | null; timerTs: string }
@@ -18,21 +19,47 @@ export type BroadcastEvent =
   | { type: 'UNSOLD';     playerId: string; playerName: string }
   | { type: 'RESET_BID';  playerId: string; baseBid: number };
 
-/** Singleton broadcast channel — shared across the app */
+// Module-level singleton — one channel shared across the whole app
 let _channel: ReturnType<typeof supabase.channel> | null = null;
+let _subscribed = false;
 
 export function getBroadcastChannel() {
   if (!_channel) {
     _channel = supabase.channel(BROADCAST_CHANNEL, {
-      config: { broadcast: { self: true, ack: false } },
+      config: {
+        broadcast: {
+          self: true,  // host also receives their own broadcasts (for local state sync)
+          ack: false,  // fire-and-forget for minimum latency
+        },
+      },
     });
-    _channel.subscribe();
   }
+
+  if (!_subscribed) {
+    _channel.subscribe((status) => {
+      _subscribed = status === 'SUBSCRIBED';
+      if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+        // Reset and reconnect
+        _channel = null;
+        _subscribed = false;
+      }
+    });
+  }
+
   return _channel;
 }
 
-/** Send a broadcast event (host side) */
-export async function emitBid(event: BroadcastEvent) {
-  const ch = getBroadcastChannel();
-  await ch.send({ type: 'broadcast', event: 'bid', payload: event });
+/** Emit a broadcast event — all connected clients receive this in ~10-30ms */
+export async function emitBid(event: BroadcastEvent): Promise<void> {
+  try {
+    const ch = getBroadcastChannel();
+    await ch.send({
+      type: 'broadcast',
+      event: 'bid',
+      payload: event,
+    });
+  } catch (err) {
+    // Non-fatal — DB write still persists the state
+    console.warn('Broadcast emit failed (DB write will still sync):', err);
+  }
 }

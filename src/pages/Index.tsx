@@ -22,12 +22,12 @@ const Index = () => {
 
   // Navigate to /live instantly when host sets a player — driven by broadcast (< 30ms)
   useEffect(() => {
+    let mounted = true;
     const ch = getBroadcastChannel();
-    const handler = ({ payload }: { payload: any }) => {
-      if (payload.type === 'SET_PLAYER') navigate('/live');
-    };
-    ch.on('broadcast', { event: 'bid' }, handler);
-    return () => { ch.off('broadcast', handler as any); };
+    ch.on('broadcast', { event: 'bid' }, ({ payload }: { payload: any }) => {
+      if (mounted && payload?.type === 'SET_PLAYER') navigate('/live');
+    });
+    return () => { mounted = false; };
   }, [navigate]);
   const [refreshing, setRefreshing]   = useState(false);
 
