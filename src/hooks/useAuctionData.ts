@@ -59,7 +59,7 @@ export function useAuctionData() {
       });
 
     // Reduced fallback interval since realtime handles most updates
-    const interval = setInterval(fetchAll, 10000);
+    const interval = setInterval(fetchAll, 30000);
 
     return () => {
       supabase.removeChannel(channel);

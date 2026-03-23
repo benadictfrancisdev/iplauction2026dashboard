@@ -8,8 +8,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { BidTracker } from '@/components/BidTracker';
 import { AddPlayerModal } from '@/components/AddPlayerModal';
+import { EditPlayerModal } from '@/components/EditPlayerModal';
 import { AcceleratedAuction } from '@/components/AcceleratedAuction';
 import { RandomTeamGenerator } from '@/components/RandomTeamGenerator';
+import { Pencil, Trash2 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
 
 const PASSCODE = 'IPL2026';
 
@@ -67,6 +72,8 @@ function HostDashboard() {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSet, setFilterSet] = useState('all');
+  const [editPlayer, setEditPlayer] = useState<AuctionPlayer | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<AuctionPlayer | null>(null);
 
   const setNumbers = useMemo(() => {
     const sets = new Map<number, { name: string; count: number }>();
@@ -302,6 +309,8 @@ function HostDashboard() {
                     <th className="text-right p-2">Base</th>
                     <th className="text-center p-2">Status</th>
                     <th className="text-center p-2">Action</th>
+                    <th className="text-center p-2">Update</th>
+                    <th className="text-center p-2">Delete</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -329,6 +338,16 @@ function HostDashboard() {
                           </Button>
                         )}
                       </td>
+                      <td className="p-2 text-center">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setEditPlayer(p)}>
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </td>
+                      <td className="p-2 text-center">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm(p)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -337,6 +356,37 @@ function HostDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Edit Player Modal */}
+      {editPlayer && (
+        <EditPlayerModal
+          player={editPlayer}
+          open={!!editPlayer}
+          onOpenChange={(open) => { if (!open) setEditPlayer(null); }}
+          onUpdated={refetch}
+        />
+      )}
+
+      {/* Delete Confirmation */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg p-6 max-w-sm w-full space-y-4">
+            <h2 className="font-display font-bold text-lg text-foreground">Delete Player?</h2>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete <strong>{deleteConfirm.player_name}</strong>? This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="destructive" className="flex-1" onClick={async () => {
+                await supabase.from('auction_players').delete().eq('id', deleteConfirm.id);
+                toast({ title: `🗑️ ${deleteConfirm.player_name} deleted` });
+                setDeleteConfirm(null);
+                refetch();
+              }}>Yes, Delete</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
