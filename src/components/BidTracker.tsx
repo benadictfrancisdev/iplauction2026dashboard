@@ -6,32 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { AuctionTimer, AuctionTimerHandle } from '@/components/AuctionTimer';
 import type { Database } from '@/integrations/supabase/types';
 
-function playSoldSound() {
-  const ctx = new AudioContext();
-  const hit = ctx.createOscillator();
-  const hitGain = ctx.createGain();
-  hit.type = 'square';
-  hit.frequency.setValueAtTime(200, ctx.currentTime);
-  hit.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.15);
-  hitGain.gain.setValueAtTime(0.6, ctx.currentTime);
-  hitGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-  hit.connect(hitGain).connect(ctx.destination);
-  hit.start(ctx.currentTime);
-  hit.stop(ctx.currentTime + 0.2);
-
-  const chime = ctx.createOscillator();
-  const chimeGain = ctx.createGain();
-  chime.type = 'sine';
-  chime.frequency.setValueAtTime(523, ctx.currentTime + 0.25);
-  chime.frequency.setValueAtTime(659, ctx.currentTime + 0.4);
-  chime.frequency.setValueAtTime(784, ctx.currentTime + 0.55);
-  chimeGain.gain.setValueAtTime(0.3, ctx.currentTime + 0.25);
-  chimeGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.9);
-  chime.connect(chimeGain).connect(ctx.destination);
-  chime.start(ctx.currentTime + 0.25);
-  chime.stop(ctx.currentTime + 0.9);
-}
-
 type AuctionPlayer = Database['public']['Tables']['auction_players']['Row'];
 type Team = Database['public']['Tables']['teams']['Row'];
 
@@ -41,116 +15,157 @@ interface Props {
   onComplete: () => void;
 }
 
-const BID_INCREMENTS = [
-  { label: '+5L', value: 0.05 },
-  { label: '+10L', value: 0.10 },
-  { label: '+20L', value: 0.20 },
-  { label: '+25L', value: 0.25 },
-  { label: '+50L', value: 0.50 },
+function playSoldSound() {
+  try {
+    const ctx = new AudioContext();
+    const hit = ctx.createOscillator();
+    const hitG = ctx.createGain();
+    hit.type = 'square';
+    hit.frequency.setValueAtTime(200, ctx.currentTime);
+    hit.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.15);
+    hitG.gain.setValueAtTime(0.6, ctx.currentTime);
+    hitG.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    hit.connect(hitG).connect(ctx.destination);
+    hit.start(); hit.stop(ctx.currentTime + 0.2);
+    const chime = ctx.createOscillator();
+    const chimeG = ctx.createGain();
+    chime.type = 'sine';
+    [523, 659, 784].forEach((f, i) => chime.frequency.setValueAtTime(f, ctx.currentTime + 0.25 + i * 0.15));
+    chimeG.gain.setValueAtTime(0.3, ctx.currentTime + 0.25);
+    chimeG.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.9);
+    chime.connect(chimeG).connect(ctx.destination);
+    chime.start(ctx.currentTime + 0.25); chime.stop(ctx.currentTime + 0.9);
+  } catch {}
+}
+
+const BID_STEPS = [
+  { label: '+5L',   value: 0.05 },
+  { label: '+10L',  value: 0.10 },
+  { label: '+20L',  value: 0.20 },
+  { label: '+25L',  value: 0.25 },
+  { label: '+50L',  value: 0.50 },
   { label: '+1 Cr', value: 1.00 },
 ];
 
 export function BidTracker({ currentPlayer, teams, onComplete }: Props) {
   const { toast } = useToast();
   const [selectedTeam, setSelectedTeam] = useState('');
-  const [soldPrice, setSoldPrice] = useState('');
+  const [soldPrice,    setSoldPrice]    = useState('');
   const [timerExpired, setTimerExpired] = useState(false);
+  const [bidding,      setBidding]      = useState(false);
   const timerRef = useRef<AuctionTimerHandle>(null);
 
-  const currentBid = (currentPlayer as any).current_bid as number | null;
+  const currentBid    = (currentPlayer as any).current_bid  as number | null;
   const leadingTeamId = (currentPlayer as any).leading_team_id as string | null;
-  const basePriceCr = currentPlayer.base_price / 100;
-  const displayBid = currentBid ?? basePriceCr;
+  const basePriceCr   = currentPlayer.base_price / 100;
+  const displayBid    = currentBid ?? basePriceCr;
+  const leadingTeam   = teams.find(t => t.id === leadingTeamId);
+  const bidTeamId     = selectedTeam || leadingTeamId || '';
 
-  const leadingTeam = teams.find(t => t.id === leadingTeamId);
+  const handleTimerEnd = useCallback(() => setTimerExpired(true), []);
 
-  const handleTimerEnd = useCallback(() => {
-    setTimerExpired(true);
-  }, []);
-
+  // ── Increment bid ──────────────────────────────────────────────────
   const incrementBid = async (amount: number) => {
-    if (timerExpired) return; // Freeze bids when timer expired
-    const newBid = displayBid + amount;
-    await supabase.from('auction_players').update({
-      current_bid: newBid,
-      leading_team_id: selectedTeam || leadingTeamId,
-      timer_started_at: new Date().toISOString(),
-    } as any).eq('id', currentPlayer.id);
-    // Auto-start/reset timer on each bid
+    if (timerExpired || bidding) return;
+    setBidding(true);
+    const newBid    = parseFloat((displayBid + amount).toFixed(2));
+    const teamId    = selectedTeam || leadingTeamId;
+    const now       = new Date().toISOString();
+
+    // Single atomic update — realtime pushes to all viewers instantly
+    const { error } = await supabase
+      .from('auction_players')
+      .update({
+        current_bid:      newBid,
+        leading_team_id:  teamId,
+        timer_started_at: now,
+      } as any)
+      .eq('id', currentPlayer.id);
+
+    setBidding(false);
+    if (error) {
+      toast({ title: 'Bid failed', description: error.message, variant: 'destructive' });
+      return;
+    }
     setTimerExpired(false);
     timerRef.current?.start();
-    onComplete();
+    // Do NOT call onComplete() here — realtime handles the update for all clients
   };
 
+  // ── Reset bid ──────────────────────────────────────────────────────
   const resetBid = async () => {
     await supabase.from('auction_players').update({
-      current_bid: basePriceCr,
-      leading_team_id: null,
+      current_bid:      basePriceCr,
+      leading_team_id:  null,
       timer_started_at: null,
     } as any).eq('id', currentPlayer.id);
     setSelectedTeam('');
     setTimerExpired(false);
     timerRef.current?.reset();
-    onComplete();
   };
 
+  // ── Confirm sale ───────────────────────────────────────────────────
   const confirmSale = async () => {
-    const price = soldPrice ? parseFloat(soldPrice) : displayBid;
+    const price  = soldPrice ? parseFloat(soldPrice) : displayBid;
     const teamId = selectedTeam || leadingTeamId;
     if (!teamId || !price) {
       toast({ title: 'Select a team and ensure bid is set', variant: 'destructive' });
       return;
     }
-
     const team = teams.find(t => t.id === teamId);
     if (!team) return;
 
-    await supabase.from('auction_players').update({
-      status: 'sold',
-      sold_to_team: teamId,
-      sold_price: price,
-      current_bid: null,
-      leading_team_id: null,
-    } as any).eq('id', currentPlayer.id);
+    // All updates in parallel for speed
+    await Promise.all([
+      supabase.from('auction_players').update({
+        status:           'sold',
+        sold_to_team:     teamId,
+        sold_price:       price,
+        current_bid:      null,
+        leading_team_id:  null,
+        timer_started_at: null,
+      } as any).eq('id', currentPlayer.id),
 
-    await supabase.from('teams').update({
-      spent_budget: team.spent_budget + price,
-    }).eq('id', teamId);
+      supabase.from('teams').update({
+        spent_budget: team.spent_budget + price,
+      }).eq('id', teamId),
 
-    await supabase.from('auction_log').insert({
-      player_id: currentPlayer.id,
-      team_id: teamId,
-      player_name: currentPlayer.player_name,
-      team_name: team.short_name,
-      sold_price: price,
-      action: 'sold',
-    });
+      supabase.from('auction_log').insert({
+        player_id:    currentPlayer.id,
+        team_id:      teamId,
+        player_name:  currentPlayer.player_name,
+        team_name:    team.short_name,
+        sold_price:   price,
+        action:       'sold',
+      }),
+    ]);
 
-    setSoldPrice('');
-    setSelectedTeam('');
-    setTimerExpired(false);
+    setSoldPrice(''); setSelectedTeam(''); setTimerExpired(false);
     timerRef.current?.reset();
     playSoldSound();
-    toast({ title: `${currentPlayer.player_name} sold to ${team.short_name} for ₹${price.toFixed(2)} Cr!` });
+    toast({ title: `🏏 ${currentPlayer.player_name} → ${team.short_name} for ₹${price.toFixed(2)} Cr!` });
     onComplete();
   };
 
+  // ── Mark unsold ────────────────────────────────────────────────────
   const markUnsold = async () => {
-    await supabase.from('auction_players').update({
-      status: 'unsold',
-      current_bid: null,
-      leading_team_id: null,
-    } as any).eq('id', currentPlayer.id);
+    await Promise.all([
+      supabase.from('auction_players').update({
+        status:           'unsold',
+        current_bid:      null,
+        leading_team_id:  null,
+        timer_started_at: null,
+      } as any).eq('id', currentPlayer.id),
 
-    await supabase.from('auction_log').insert({
-      player_id: currentPlayer.id,
-      player_name: currentPlayer.player_name,
-      action: 'unsold',
-    });
-
+      supabase.from('auction_log').insert({
+        player_id:   currentPlayer.id,
+        player_name: currentPlayer.player_name,
+        action:      'unsold',
+      }),
+    ]);
     setTimerExpired(false);
     timerRef.current?.reset();
-    toast({ title: `${currentPlayer.player_name} marked as unsold` });
+    toast({ title: `❌ ${currentPlayer.player_name} — unsold` });
     onComplete();
   };
 
@@ -158,17 +173,18 @@ export function BidTracker({ currentPlayer, teams, onComplete }: Props) {
     <div className="bg-card border border-border rounded-lg p-4 space-y-4">
       {/* Player Info */}
       <div>
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full bg-live live-pulse" />
-          <span className="text-xs font-bold text-live uppercase">Now Auctioning</span>
+          <span className="text-xs font-bold text-live uppercase tracking-wider">Now Auctioning</span>
         </div>
         <h2 className="font-display font-bold text-xl text-foreground">{currentPlayer.player_name}</h2>
         <p className="text-xs text-muted-foreground">
-          {currentPlayer.role} | {currentPlayer.country} | Base: ₹{currentPlayer.base_price >= 100 ? `${basePriceCr.toFixed(2)} Cr` : `${currentPlayer.base_price} L`}
+          {currentPlayer.role} · {currentPlayer.country} · Base:{' '}
+          {currentPlayer.base_price >= 100 ? `₹${basePriceCr.toFixed(2)} Cr` : `₹${currentPlayer.base_price}L`}
         </p>
       </div>
 
-      {/* Live Bid Tracker */}
+      {/* Live Bid Display */}
       <div className="bg-muted/30 rounded-lg p-3 space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -176,75 +192,70 @@ export function BidTracker({ currentPlayer, teams, onComplete }: Props) {
             <div className="font-display font-bold text-2xl text-live">₹{displayBid.toFixed(2)} Cr</div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-muted-foreground">Leading Bidder</div>
+            <div className="text-xs text-muted-foreground">Leading</div>
             <div className="font-display font-bold text-sm" style={leadingTeam ? { color: leadingTeam.color } : {}}>
-              {leadingTeam ? leadingTeam.short_name : 'None'}
+              {leadingTeam ? leadingTeam.short_name : '—'}
             </div>
           </div>
         </div>
 
-        {/* Team selector for bid */}
+        {/* Team selector */}
         <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-          <SelectTrigger className={`h-8 text-xs ${timerExpired ? 'ring-2 ring-live animate-pulse' : ''}`}>
-            <SelectValue placeholder={timerExpired ? '⚠️ Select bidding team!' : 'Select bidding team'} />
+          <SelectTrigger className={`h-8 text-xs ${timerExpired ? 'ring-2 ring-live' : ''}`}>
+            <SelectValue placeholder={timerExpired ? '⚠️ Select team!' : 'Select bidding team'} />
           </SelectTrigger>
           <SelectContent>
             {teams.map(t => (
               <SelectItem key={t.id} value={t.id}>
-                {t.short_name} — ₹{(t.total_budget - t.spent_budget).toFixed(2)} Cr left
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: t.color }} />
+                  {t.short_name} — ₹{(t.total_budget - t.spent_budget).toFixed(2)} Cr left
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        {/* Bid Increment Buttons */}
-        <div className="grid grid-cols-3 gap-2">
-          {BID_INCREMENTS.map(inc => (
+        {/* Bid buttons */}
+        <div className="grid grid-cols-3 gap-1.5">
+          {BID_STEPS.map(inc => (
             <Button
               key={inc.label}
               size="sm"
               onClick={() => incrementBid(inc.value)}
-              disabled={timerExpired}
-              className={`h-10 font-bold text-sm ${
-                timerExpired 
-                  ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50' 
-                  : 'bg-accent text-accent-foreground hover:bg-accent/80'
-              }`}
+              disabled={timerExpired || bidding}
+              className="h-10 font-bold text-sm bg-accent text-accent-foreground hover:bg-accent/80 disabled:opacity-40"
             >
-              {inc.label}
+              {bidding ? '…' : inc.label}
             </Button>
           ))}
         </div>
 
         <Button variant="outline" size="sm" className="w-full text-xs" onClick={resetBid}>
-          ↺ Reset Bid to Base
+          ↺ Reset to Base Price
         </Button>
 
-        {/* Auction Timer */}
+        {/* Timer */}
         <AuctionTimer ref={timerRef} onTimerEnd={handleTimerEnd} />
 
         {timerExpired && (
-          <div className="text-center text-xs font-bold text-live animate-pulse">
-            ⏰ Timer expired! Select a team and confirm the sale or mark unsold.
-          </div>
+          <p className="text-center text-xs font-bold text-live animate-pulse">
+            ⏰ Timer ended — confirm sale or mark unsold
+          </p>
         )}
       </div>
 
       {/* Confirm Sale */}
       <div className="space-y-2">
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Sold Price (auto-filled, editable)</label>
-          <input
-            type="number"
-            step="0.05"
-            min="0"
-            value={soldPrice || displayBid.toFixed(2)}
-            onChange={e => setSoldPrice(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </div>
+        <label className="text-xs text-muted-foreground block">Final Sale Price (Cr)</label>
+        <input
+          type="number" step="0.05" min="0"
+          value={soldPrice || displayBid.toFixed(2)}
+          onChange={e => setSoldPrice(e.target.value)}
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
         <div className="flex gap-2">
-          <Button onClick={confirmSale} className="flex-1">✅ Confirm Sale</Button>
+          <Button onClick={confirmSale} className="flex-1 font-bold">✅ Confirm Sale</Button>
           <Button variant="outline" onClick={markUnsold} className="flex-1">❌ Unsold</Button>
         </div>
       </div>
