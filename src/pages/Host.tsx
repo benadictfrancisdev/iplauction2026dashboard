@@ -356,6 +356,37 @@ function HostDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Edit Player Modal */}
+      {editPlayer && (
+        <EditPlayerModal
+          player={editPlayer}
+          open={!!editPlayer}
+          onOpenChange={(open) => { if (!open) setEditPlayer(null); }}
+          onUpdated={refetch}
+        />
+      )}
+
+      {/* Delete Confirmation */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg p-6 max-w-sm w-full space-y-4">
+            <h2 className="font-display font-bold text-lg text-foreground">Delete Player?</h2>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete <strong>{deleteConfirm.player_name}</strong>? This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="destructive" className="flex-1" onClick={async () => {
+                await supabase.from('auction_players').delete().eq('id', deleteConfirm.id);
+                toast({ title: `🗑️ ${deleteConfirm.player_name} deleted` });
+                setDeleteConfirm(null);
+                refetch();
+              }}>Yes, Delete</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
