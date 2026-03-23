@@ -1,12 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuctionData } from '@/hooks/useAuctionData';
 import { TeamCard } from '@/components/TeamCard';
-import { CurrentPlayerSpotlight } from '@/components/CurrentPlayerSpotlight';
 import { AuctionLogFeed } from '@/components/AuctionLogFeed';
 import { AuctionSummary } from '@/components/AuctionSummary';
 import { TopBuys } from '@/components/TopBuys';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
@@ -17,7 +16,20 @@ const Index = () => {
     soldPlayersByTeam, retainedByTeam, refetch,
   } = useAuctionData();
 
+  const navigate = useNavigate();
   const [showSummary, setShowSummary] = useState(false);
+  const wasLive = useRef(false);
+
+  // Auto-navigate to /live when host sets a player as current
+  useEffect(() => {
+    if (currentPlayer && !wasLive.current) {
+      wasLive.current = true;
+      navigate('/live');
+    }
+    if (!currentPlayer) {
+      wasLive.current = false;
+    }
+  }, [currentPlayer, navigate]);
   const [refreshing,  setRefreshing]  = useState(false);
 
   const byShort = useMemo(() => {
@@ -114,10 +126,25 @@ const Index = () => {
         <AuctionSummary teams={teams} auctionPlayers={auctionPlayers} retainedPlayers={retainedPlayers} />
       ) : (
         <>
-          {/* ── Live Auction Panel ──────────────────────── */}
+          {/* ── Live Auction Panel — opens /live page ─── */}
           {currentPlayer && (
             <div className="mb-4">
-              <CurrentPlayerSpotlight player={currentPlayer} teams={teams} fullscreen={false} />
+              <div
+                className="rounded-xl border-2 border-live/60 bg-card p-4 flex items-center justify-between gap-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                onClick={() => navigate('/live')}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded-full bg-live animate-pulse shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-live uppercase tracking-widest">Now Auctioning</p>
+                    <p className="font-display font-black text-xl text-foreground">{currentPlayer.player_name}</p>
+                    <p className="text-xs text-muted-foreground">{currentPlayer.role} · {currentPlayer.country}</p>
+                  </div>
+                </div>
+                <Button className="gap-2 bg-live hover:bg-live/90 text-white font-bold" onClick={e=>{e.stopPropagation();navigate('/live');}}>
+                  🔴 View Live Auction
+                </Button>
+              </div>
             </div>
           )}
 

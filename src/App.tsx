@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import Host from "./pages/Host.tsx";
 import TeamDetail from "./pages/TeamDetail.tsx";
+import LiveAuction from "./pages/LiveAuction.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -18,6 +19,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/live" element={<LiveAuction />} />
           <Route path="/host" element={<Host />} />
           <Route path="/team/:teamId" element={<TeamDetail />} />
           <Route path="*" element={<NotFound />} />
