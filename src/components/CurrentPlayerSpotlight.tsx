@@ -51,21 +51,29 @@ export function CurrentPlayerSpotlight({ player, teams, fullscreen }: Props) {
 
   const currentBid = (player as any)?.current_bid as number | null;
 
-  // Auto-start timer when bid changes (realtime sync)
+  // Server-timestamp based timer sync
+  const timerStartedAt = (player as any)?.timer_started_at as string | null;
+
+  useEffect(() => {
+    if (!timerStartedAt) { setTimerRunning(false); setTimerSeconds(10); return; }
+    const elapsed = Math.floor((Date.now() - new Date(timerStartedAt).getTime()) / 1000);
+    const remaining = Math.max(0, 10 - elapsed);
+    setTimerSeconds(remaining);
+    setTimerRunning(remaining > 0);
+  }, [timerStartedAt, player?.id]);
+
+  // Fallback: auto-start timer when bid changes (no server timestamp)
   useEffect(() => {
     if (!player || !currentBid) return;
-    if (lastBid !== null && currentBid !== lastBid) {
-      setTimerSeconds(10);
-      setTimerRunning(true);
+    if (lastBid !== null && currentBid !== lastBid && !timerStartedAt) {
+      setTimerSeconds(10); setTimerRunning(true);
     }
     setLastBid(currentBid);
-  }, [currentBid, player]);
+  }, [currentBid, player, timerStartedAt]);
 
   // Reset timer when player changes
   useEffect(() => {
-    setTimerSeconds(10);
-    setTimerRunning(false);
-    setLastBid(null);
+    setTimerSeconds(10); setTimerRunning(false); setLastBid(null);
   }, [player?.id]);
 
   // Countdown logic

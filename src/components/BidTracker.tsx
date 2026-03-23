@@ -74,6 +74,7 @@ export function BidTracker({ currentPlayer, teams, onComplete }: Props) {
     await supabase.from('auction_players').update({
       current_bid: newBid,
       leading_team_id: selectedTeam || leadingTeamId,
+      timer_started_at: new Date().toISOString(),
     } as any).eq('id', currentPlayer.id);
     // Auto-start/reset timer on each bid
     setTimerExpired(false);
@@ -85,6 +86,7 @@ export function BidTracker({ currentPlayer, teams, onComplete }: Props) {
     await supabase.from('auction_players').update({
       current_bid: basePriceCr,
       leading_team_id: null,
+      timer_started_at: null,
     } as any).eq('id', currentPlayer.id);
     setSelectedTeam('');
     setTimerExpired(false);

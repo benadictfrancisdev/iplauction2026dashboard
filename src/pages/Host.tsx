@@ -105,10 +105,10 @@ function HostDashboard() {
   }, [auctionPlayers]);
 
   const setAsCurrent = async (playerId: string) => {
-    await supabase.from('auction_players').update({ status: 'available', current_bid: null, leading_team_id: null } as any).eq('status', 'current');
+    await supabase.from('auction_players').update({ status: 'available', current_bid: null, leading_team_id: null, timer_started_at: null } as any).eq('status', 'current');
     const player = auctionPlayers.find(p => p.id === playerId);
     const baseCr = player ? player.base_price / 100 : 0;
-    await supabase.from('auction_players').update({ status: 'current', current_bid: baseCr, leading_team_id: null } as any).eq('id', playerId);
+    await supabase.from('auction_players').update({ status: 'current', current_bid: baseCr, leading_team_id: null, timer_started_at: null } as any).eq('id', playerId);
     toast({ title: 'Player set as current' });
     refetch();
   };
@@ -225,7 +225,7 @@ function HostDashboard() {
           <AcceleratedAuction auctionPlayers={auctionPlayers} onComplete={refetch} />
 
           {/* Random Team Generator */}
-          <RandomTeamGenerator teams={teams} />
+          <RandomTeamGenerator teams={teams} onSaved={refetch} />
 
           {/* Team Budget Monitor */}
           <div className="bg-card border border-border rounded-lg p-3">
