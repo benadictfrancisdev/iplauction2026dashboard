@@ -41,7 +41,7 @@ export function RandomTeamGenerator({ teams, onSaved }: Props) {
     try {
       // Step 1: Clear all existing owner names from every team
       const clearAll = teams.map(t =>
-        supabase.from('teams').update({ owner_name: null } as any).eq('id', t.id)
+        supabase.from('teams').update({ owner_name: null }).eq('id', t.id)
       );
       await Promise.all(clearAll);
 
@@ -56,7 +56,7 @@ export function RandomTeamGenerator({ teams, onSaved }: Props) {
       const updates = Object.entries(teamOwners).map(([teamId, names]) =>
         supabase
           .from('teams')
-          .update({ owner_name: names.join(', ') } as any)
+          .update({ owner_name: names.join(', ') })
           .eq('id', teamId)
       );
       const results = await Promise.all(updates);
